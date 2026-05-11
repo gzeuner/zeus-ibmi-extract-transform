@@ -68,26 +68,39 @@ Prioritaet:
 
 ## 5. CLI Usage
 ```text
---help | -h
---version | -v
---config <file>
---execute
---db-driver <class>
---db-url <url>
---db-user <user>
---db-password <pwd>
---db-password-env <ENV_VAR>
---query <sql>
---output-dir <path>
---output-formats <csv>
---manifest-enabled
---manifest-disabled
---fetch-size <n>
---query-timeout-seconds <n>
---allow-empty-password
+General:
+  -h, --help
+  -v, --version
+
+Config:
+  --config <file>
+
+Database:
+  --db-driver <class>
+  --db-url <url>
+  --db-user <user>
+  --db-password <pwd>
+  --db-password-env <ENV_VAR>
+  --allow-empty-password
+
+Query:
+  --query <sql>
+  --fetch-size <n>
+  --query-timeout-seconds <n>
+
+Output:
+  --output-dir <path>
+  --output-formats <csv>
+  --manifest-enabled
+  --manifest-disabled
+
+Execution:
+  -x, --execute
 ```
 
 Fuer `--output-formats` sind aktuell erlaubt: `xml,json,jsonl,csv,md`.
+`--help` und `--version` funktionieren ohne `--config`.
+Bei doppelten CLI-Optionen gewinnt der zuletzt gesetzte Wert.
 
 `--version` und `toolVersion` im RunManifest werden bevorzugt aus Build-Metadaten (Jar `Implementation-Version`, abgeleitet aus `pom.xml`) gelesen.
 Falls diese Metadaten lokal (z. B. in IDE/Test-Classpath ohne gebautes Jar) nicht verfuegbar sind, wird auf `0.1.0-SNAPSHOT` zurueckgefallen.

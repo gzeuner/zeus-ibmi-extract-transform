@@ -16,8 +16,8 @@ import de.zeus.ibmi.selection.ReadOnlyJdbcQueryExecutor;
 import de.zeus.ibmi.selection.ReadOnlyQueryGuard;
 import de.zeus.ibmi.selection.RunSelectionAndExportUseCase;
 import de.zeus.ibmi.version.VersionProvider;
-import java.io.PrintStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
@@ -29,14 +29,26 @@ public final class CliApplication {
 
     private final Map<String, String> environment;
     private final VersionProvider versionProvider;
+    private final CliHelpRenderer helpRenderer;
+    private final CliOutputRenderer outputRenderer;
 
     public CliApplication(Map<String, String> environment) {
-        this(environment, new VersionProvider());
+        this(environment, new VersionProvider(), new CliHelpRenderer(), new CliOutputRenderer());
     }
 
     CliApplication(Map<String, String> environment, VersionProvider versionProvider) {
+        this(environment, versionProvider, new CliHelpRenderer(), new CliOutputRenderer());
+    }
+
+    CliApplication(
+            Map<String, String> environment,
+            VersionProvider versionProvider,
+            CliHelpRenderer helpRenderer,
+            CliOutputRenderer outputRenderer) {
         this.environment = environment;
         this.versionProvider = versionProvider;
+        this.helpRenderer = helpRenderer;
+        this.outputRenderer = outputRenderer;
     }
 
     public int run(String[] args, PrintStream out, PrintStream err) {
@@ -44,7 +56,7 @@ public final class CliApplication {
             CliArguments parsed = CliArguments.parse(args == null ? new String[0] : args);
             String toolVersion = versionProvider.resolve();
             if (args == null || args.length == 0 || parsed.help()) {
-                printHelp(out, toolVersion);
+                out.println(helpRenderer.render(TOOL_NAME, toolVersion));
                 return ExitCode.SUCCESS.code();
             }
             if (parsed.version()) {
@@ -52,7 +64,7 @@ public final class CliApplication {
                 return ExitCode.SUCCESS.code();
             }
             if (parsed.configPath() == null) {
-                throw new ConfigValidationException("Missing required argument: --config <file>");
+                throw new CliArgumentException("Missing required argument: --config <file>");
             }
             return runWithConfig(parsed, out, toolVersion);
         } catch (RuntimeException ex) {
@@ -63,23 +75,19 @@ public final class CliApplication {
     }
 
     private int runWithConfig(CliArguments args, PrintStream out, String toolVersion) {
-        AppConfig config;
-        try {
-            config = ConfigLoader.load(args.configPath(), environment, args.configOverrides());
-        } catch (IOException ex) {
-            throw new ConfigValidationException("Unable to load config file: " + args.configPath(), ex);
-        }
+        AppConfig config = loadConfig(args);
         ReadOnlyQueryGuard guard = new ReadOnlyQueryGuard();
         String normalizedQuery = guard.validateOrNormalize(config.query());
-
-        out.println("Configuration loaded from: " + args.configPath());
-        out.println("Database URL: " + SecretMasker.maskSensitive(config.databaseUrl()));
-        out.println("Database User: " + SecretMasker.maskSensitive(config.username()));
-        out.println("Output Directory: " + config.outputDirectory());
-        out.println("Output formats: " + String.join(",", config.outputFormatIds()));
-        out.println("Run manifest enabled: " + config.runManifestEnabled());
-        out.println("Read-only query check: OK");
-        out.println("Query preview: " + previewQuery(normalizedQuery));
+        CliExecutionPlan plan = new CliExecutionPlan(
+                args.configPath(),
+                args.execute(),
+                config.databaseUrl(),
+                config.username(),
+                config.outputDirectory(),
+                config.outputFormatIds(),
+                config.runManifestEnabled(),
+                previewQuery(normalizedQuery));
+        outputRenderer.renderExecutionPlan(out, plan);
 
         if (!args.execute()) {
             Instant startedAt = Instant.now();
@@ -96,9 +104,9 @@ public final class CliApplication {
                     previewQuery(normalizedQuery),
                     config.outputDirectory(),
                     config.outputFormatIds());
-            out.println("Dry run only. Add --execute to run read-only query execution.");
-            out.println("Planned output files: <run-id>." + String.join(", <run-id>.", config.outputFormatIds()));
-            maybeWriteManifest(config, dryRunManifest, out);
+            outputRenderer.renderDryRunSummary(out, config.outputFormatIds());
+            Path manifestPath = maybeWriteManifest(config, dryRunManifest);
+            outputRenderer.renderManifestPath(out, manifestPath);
             return ExitCode.SUCCESS.code();
         }
 
@@ -110,7 +118,9 @@ public final class CliApplication {
                 TOOL_NAME,
                 toolVersion);
         RunManifest manifest = useCase.run(config, args.configPath().toString(), normalizedQuery);
-        maybeWriteManifest(config, manifest, out);
+        Path manifestPath = maybeWriteManifest(config, manifest);
+        outputRenderer.renderExecuteSummary(out, manifest);
+        outputRenderer.renderManifestPath(out, manifestPath);
         out.println(RunManifestJsonSerializer.toJson(manifest));
         if ("SUCCESS".equals(manifest.status())) {
             return ExitCode.SUCCESS.code();
@@ -118,12 +128,19 @@ public final class CliApplication {
         return ExitCodeMapper.mapErrorClassName(manifest.errorClass()).code();
     }
 
-    private static void maybeWriteManifest(AppConfig config, RunManifest manifest, PrintStream out) {
-        if (!config.runManifestEnabled()) {
-            return;
+    private AppConfig loadConfig(CliArguments args) {
+        try {
+            return ConfigLoader.load(args.configPath(), environment, args.configOverrides());
+        } catch (IOException ex) {
+            throw new ConfigValidationException("Unable to load config file: " + args.configPath(), ex);
         }
-        Path manifestPath = new RunManifestWriter().write(Path.of(config.outputDirectory()), manifest);
-        out.println("Run manifest written: " + manifestPath);
+    }
+
+    private static Path maybeWriteManifest(AppConfig config, RunManifest manifest) {
+        if (!config.runManifestEnabled()) {
+            return null;
+        }
+        return new RunManifestWriter().write(Path.of(config.outputDirectory()), manifest);
     }
 
     private static String previewQuery(String query) {
@@ -138,18 +155,4 @@ public final class CliApplication {
         return singleLine.substring(0, max) + "...";
     }
 
-    private static void printHelp(PrintStream out, String toolVersion) {
-        out.println(TOOL_NAME + " " + toolVersion);
-        out.println("Usage:");
-        out.println("  --help | -h                  Show help");
-        out.println("  --version | -v               Show version");
-        out.println("  --config <file> [--execute]  Load config and optionally execute read-only query");
-        out.println("  --db-url <url>               Override JDBC URL (CLI > ENV > file)");
-        out.println("  --db-user <user>             Override JDBC user");
-        out.println("  --db-password <pwd>          Override JDBC password");
-        out.println("  --db-password-env <ENV_VAR>  Resolve password from named environment variable");
-        out.println("  --query <sql>                Override SQL query");
-        out.println("  --output-dir <path>          Override output directory");
-        out.println("  --output-formats <csv>       Override output formats (xml,json,jsonl,csv,md)");
-    }
 }
