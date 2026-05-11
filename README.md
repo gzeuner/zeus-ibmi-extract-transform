@@ -27,6 +27,24 @@ Explizite Execute-Ausfuehrung:
 java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar --config config/example.application.properties --execute
 ```
 
+Execute mit `jsonl` zusaetzlich:
+```bash
+java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar \
+  --config config/example.application.properties \
+  --output-formats xml,json,jsonl,csv,md \
+  --execute
+```
+
+Offline/H2-Demo ohne IBM-i-Verbindung:
+```bash
+java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar \
+  --config config/example.application.properties \
+  --db-driver org.h2.Driver \
+  --db-url "jdbc:h2:mem:demo_readonly;MODE=DB2;DB_CLOSE_DELAY=-1" \
+  --query "SELECT 1 AS ID, 'demo' AS NAME" \
+  --execute
+```
+
 ## 4. Beispielkonfiguration
 Beispieldatei:
 - `config/example.application.properties`
@@ -69,6 +87,8 @@ Prioritaet:
 --allow-empty-password
 ```
 
+Fuer `--output-formats` sind aktuell erlaubt: `xml,json,jsonl,csv,md`.
+
 ## 6. Dry-Run vs Execute
 Dry-Run ist Default:
 - ohne `--execute` wird keine JDBC-Query ausgefuehrt
@@ -85,10 +105,11 @@ Execute nur mit `--execute`:
 V1 unterstuetzt:
 - `xml`
 - `json`
+- `jsonl`
 - `csv`
 - `md`
 
-`jsonl` ist aktuell noch nicht umgesetzt (Roadmap).
+`jsonl` schreibt ein JSON-Objekt pro Zeile (kein umschliessendes Array) und eignet sich fuer Streaming-/Pipeline-Verarbeitung.
 
 ## 8. RunManifest
 Manifest-Felder (Auszug):
@@ -100,7 +121,7 @@ Manifest-Felder (Auszug):
 - queryHash
 - queryPreview (gekuerzt)
 - outputDirectory
-- outputFiles
+- outputFiles (pro Datei inkl. `format`, `path`, `fileName`, `sizeBytes`, `sha256`, `writtenAt`)
 - outputFormats
 - rowCount / columnCount
 - errorClass / errorMessage (maskiert)
@@ -129,6 +150,7 @@ Weitere Details:
 ## 10. Security / Secrets
 - Keine echten Credentials im Repository.
 - Secrets bevorzugt aus ENV beziehen (`db.passwordEnv`).
+- `--db-password` nur bewusst/lokal nutzen (nicht in Shell-History oder Skripte mit Commit-Risiko).
 - CLI/Manifest-Fehlermeldungen werden maskiert.
 - Produktive Nutzung nur mit separatem Security Review und Betriebsfreigabe.
 
@@ -143,7 +165,6 @@ Weitere Details:
 
 ## 12. Roadmap
 - CLI-UX weiter stabilisieren (inkl. erweiterte Report-Ausgaben)
-- optionale `jsonl`-Ausgabe
 - Vergleichslauf gegen Legacy-Verhalten (`zeus-access-400`)
 - haertere Integrations- und Kompatibilitaetstests fuer IBM-i-spezifische SQL-Faelle
 

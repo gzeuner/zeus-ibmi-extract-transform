@@ -20,11 +20,12 @@ class OutputExportServiceTest {
                 QueryResultFixture.sampleResult(),
                 outputDir,
                 "test-export",
-                List.of("xml", "json", "csv", "md"));
+                List.of("xml", "json", "jsonl", "csv", "md"));
 
-        assertEquals(4, files.size());
+        assertEquals(5, files.size());
         assertTrue(Files.exists(outputDir.resolve("test-export.xml")));
         assertTrue(Files.exists(outputDir.resolve("test-export.json")));
+        assertTrue(Files.exists(outputDir.resolve("test-export.jsonl")));
         assertTrue(Files.exists(outputDir.resolve("test-export.csv")));
         assertTrue(Files.exists(outputDir.resolve("test-export.md")));
     }

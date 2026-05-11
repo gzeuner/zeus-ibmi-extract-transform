@@ -2,6 +2,7 @@ package de.zeus.ibmi.selection;
 
 import de.zeus.ibmi.config.AppConfig;
 import de.zeus.ibmi.output.OutputExportService;
+import de.zeus.ibmi.output.OutputWriteException;
 import de.zeus.ibmi.runmanifest.InputHashCalculator;
 import de.zeus.ibmi.runmanifest.RunManifest;
 import de.zeus.ibmi.runmanifest.RunManifestFactory;
@@ -59,13 +60,16 @@ public final class RunSelectionAndExportUseCase {
                     configSource,
                     queryHash,
                     queryPreview,
-                    outputDir.toString(),
+                    outputDir,
                     files,
                     config.outputFormatIds(),
                     result.rowCount(),
                     result.columns().size());
         } catch (RuntimeException ex) {
             Instant finishedAt = Instant.now();
+            List<Path> outputFiles = ex instanceof OutputWriteException outputWriteException
+                    ? outputWriteException.writtenFiles()
+                    : List.of();
             return RunManifestFactory.failure(
                     toolName,
                     toolVersion,
@@ -75,7 +79,8 @@ public final class RunSelectionAndExportUseCase {
                     configSource,
                     queryHash,
                     queryPreview,
-                    config.outputDirectory(),
+                    Path.of(config.outputDirectory()),
+                    outputFiles,
                     config.outputFormatIds(),
                     ex,
                     SecretMasker.maskSensitive(ex.getMessage()));

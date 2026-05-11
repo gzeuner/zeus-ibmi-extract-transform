@@ -140,6 +140,6 @@ public final class CliApplication {
         out.println("  --db-password-env <ENV_VAR>  Resolve password from named environment variable");
         out.println("  --query <sql>                Override SQL query");
         out.println("  --output-dir <path>          Override output directory");
-        out.println("  --output-formats <csv>       Override output formats (xml,json,csv,md)");
+        out.println("  --output-formats <csv>       Override output formats (xml,json,jsonl,csv,md)");
     }
 }

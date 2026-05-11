@@ -1,11 +1,13 @@
 package de.zeus.ibmi.runmanifest;
 
 import de.zeus.ibmi.security.SecretMasker;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class RunManifestFactory {
 
@@ -21,7 +23,7 @@ public final class RunManifestFactory {
             String configSource,
             String queryHash,
             String queryPreview,
-            String outputDirectory,
+            Path outputDirectory,
             List<Path> outputFiles,
             List<String> outputFormats,
             int rowCount,
@@ -38,8 +40,8 @@ public final class RunManifestFactory {
                 configSource,
                 queryHash,
                 queryPreview,
-                outputDirectory,
-                outputFiles.stream().map(Path::toString).collect(Collectors.toList()),
+                toDisplayPath(outputDirectory),
+                toOutputFileMetadata(outputDirectory, outputFiles),
                 outputFormats,
                 rowCount,
                 columnCount,
@@ -59,7 +61,8 @@ public final class RunManifestFactory {
             String configSource,
             String queryHash,
             String queryPreview,
-            String outputDirectory,
+            Path outputDirectory,
+            List<Path> outputFiles,
             List<String> outputFormats,
             Throwable error,
             String sanitizedErrorMessage) {
@@ -75,8 +78,8 @@ public final class RunManifestFactory {
                 configSource,
                 queryHash,
                 queryPreview,
-                outputDirectory,
-                List.of(),
+                toDisplayPath(outputDirectory),
+                toOutputFileMetadata(outputDirectory, outputFiles),
                 outputFormats,
                 0,
                 0,
@@ -120,6 +123,78 @@ public final class RunManifestFactory {
                 System.getProperty("java.version", ""),
                 System.getProperty("os.name", ""),
                 System.getProperty("os.version", ""));
+    }
+
+    private static List<OutputFileMetadata> toOutputFileMetadata(Path outputDirectory, List<Path> outputFiles) {
+        if (outputFiles == null || outputFiles.isEmpty()) {
+            return List.of();
+        }
+        Path base = outputDirectory == null ? null : outputDirectory.toAbsolutePath().normalize();
+        List<OutputFileMetadata> metadata = new ArrayList<>(outputFiles.size());
+        for (Path outputFile : outputFiles) {
+            Path absoluteFile = outputFile == null ? null : outputFile.toAbsolutePath().normalize();
+            if (absoluteFile == null) {
+                continue;
+            }
+            String relativePath = relativizeOrFileName(base, absoluteFile);
+            String fileName = absoluteFile.getFileName() == null ? "" : absoluteFile.getFileName().toString();
+            String format = formatFromFileName(fileName);
+            long sizeBytes = fileSize(absoluteFile);
+            String sha256 = OutputChecksumCalculator.sha256(absoluteFile);
+            Instant writtenAt = lastModifiedTime(absoluteFile);
+            metadata.add(new OutputFileMetadata(format, relativePath, fileName, sizeBytes, sha256, writtenAt));
+        }
+        return List.copyOf(metadata);
+    }
+
+    private static long fileSize(Path file) {
+        try {
+            return Files.size(file);
+        } catch (IOException ex) {
+            throw new ManifestException("Failed to read output size for file: " + file, ex);
+        }
+    }
+
+    private static Instant lastModifiedTime(Path file) {
+        try {
+            return Files.getLastModifiedTime(file).toInstant();
+        } catch (IOException ex) {
+            return null;
+        }
+    }
+
+    private static String relativizeOrFileName(Path outputDirectory, Path file) {
+        if (outputDirectory != null) {
+            try {
+                Path relative = outputDirectory.relativize(file);
+                return normalizeForManifest(relative.toString());
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        Path fileName = file.getFileName();
+        return fileName == null ? normalizeForManifest(file.toString()) : normalizeForManifest(fileName.toString());
+    }
+
+    private static String formatFromFileName(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return "";
+        }
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex < 0 || dotIndex == fileName.length() - 1) {
+            return "";
+        }
+        return fileName.substring(dotIndex + 1);
+    }
+
+    private static String normalizeForManifest(String value) {
+        return value.replace('\\', '/');
+    }
+
+    private static String toDisplayPath(Path outputDirectory) {
+        if (outputDirectory == null) {
+            return "";
+        }
+        return normalizeForManifest(outputDirectory.toString());
     }
 
     private static long durationMillis(Instant startedAt, Instant finishedAt) {

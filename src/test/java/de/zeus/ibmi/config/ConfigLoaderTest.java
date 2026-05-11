@@ -95,6 +95,25 @@ class ConfigLoaderTest {
     }
 
     @Test
+    void load_shouldAcceptJsonlOutputFormat() throws Exception {
+        Path outputDir = Files.createTempDirectory("cfg-jsonl-format-out-");
+        Path file = Files.createTempFile("zeus-ibmi-config-jsonl-format-", ".properties");
+        Files.writeString(file, ""
+                + "db.driver=org.h2.Driver\n"
+                + "db.url=jdbc:h2:mem:test_jsonl\n"
+                + "db.user=sa\n"
+                + "db.allowEmptyPassword=true\n"
+                + "query.sql=SELECT 1\n"
+                + "output.formats=jsonl,json\n"
+                + "output.directory=" + outputDir + "\n", StandardCharsets.UTF_8);
+
+        AppConfig config = ConfigLoader.load(file, Map.of());
+        assertEquals(2, config.outputFormats().size());
+        assertEquals(OutputFormat.JSONL, config.outputFormats().get(0));
+        assertEquals(OutputFormat.JSON, config.outputFormats().get(1));
+    }
+
+    @Test
     void load_shouldFailWhenOutputDirectoryCannotBeCreated() throws Exception {
         Path existingFile = Files.createTempFile("cfg-not-a-directory-", ".tmp");
         Path file = Files.createTempFile("zeus-ibmi-config-dir-", ".properties");

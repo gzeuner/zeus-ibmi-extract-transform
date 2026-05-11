@@ -16,7 +16,7 @@ public record RunManifest(
         String queryHash,
         String queryPreview,
         String outputDirectory,
-        List<String> outputFiles,
+        List<OutputFileMetadata> outputFiles,
         List<String> outputFormats,
         int rowCount,
         int columnCount,

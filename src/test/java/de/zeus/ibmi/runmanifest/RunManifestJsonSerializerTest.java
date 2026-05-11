@@ -23,7 +23,21 @@ class RunManifestJsonSerializerTest {
                 "sha256:abc123456",
                 "SELECT 1",
                 "./output",
-                List.of("out/export.xml", "out/export.json"),
+                List.of(
+                        new OutputFileMetadata(
+                                "xml",
+                                "out/export.xml",
+                                "export.xml",
+                                12L,
+                                "sha256:111",
+                                Instant.parse("2026-05-11T06:00:02Z")),
+                        new OutputFileMetadata(
+                                "json",
+                                "out/export.json",
+                                "export.json",
+                                24L,
+                                "sha256:222",
+                                Instant.parse("2026-05-11T06:00:03Z"))),
                 List.of("xml", "json"),
                 10,
                 2,
@@ -43,7 +57,11 @@ class RunManifestJsonSerializerTest {
         assertTrue(json.contains("\"durationMillis\":5000"));
         assertTrue(json.contains("\"queryHash\":\"sha256:abc123456\""));
         assertTrue(json.contains("\"queryPreview\":\"SELECT 1\""));
-        assertTrue(json.contains("\"outputFiles\":[\"out/export.xml\",\"out/export.json\"]"));
+        assertTrue(json.contains("\"outputFiles\":[{"));
+        assertTrue(json.contains("\"format\":\"xml\""));
+        assertTrue(json.contains("\"fileName\":\"export.xml\""));
+        assertTrue(json.contains("\"sizeBytes\":12"));
+        assertTrue(json.contains("\"sha256\":\"sha256:111\""));
         assertTrue(json.contains("\"outputFormats\":[\"xml\",\"json\"]"));
         assertTrue(json.contains("\"rowCount\":10"));
         assertTrue(json.contains("\"columnCount\":2"));

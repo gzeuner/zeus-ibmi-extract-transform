@@ -24,6 +24,11 @@ class OutputWritersGoldenFileTest {
     }
 
     @Test
+    void jsonlWriter_shouldMatchGoldenFile() throws Exception {
+        assertGolden(new JsonLinesOutputWriter(), "/golden/output/sample.jsonl");
+    }
+
+    @Test
     void csvWriter_shouldMatchGoldenFile() throws Exception {
         assertGolden(new CsvOutputWriter(), "/golden/output/sample.csv");
     }
