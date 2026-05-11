@@ -29,6 +29,8 @@ class RunManifestFactoryTest {
                 start,
                 finish,
                 "config.properties",
+                "CLI_INLINE",
+                "CLI inline",
                 "sha256:x",
                 "SELECT 1",
                 outputDir,
@@ -63,6 +65,8 @@ class RunManifestFactoryTest {
                 start,
                 finish,
                 "config.properties",
+                "CONFIG_FILE",
+                "/home/user/queries/demo.sql",
                 "sha256:x",
                 "SELECT 1",
                 Path.of("./output"),
@@ -89,6 +93,8 @@ class RunManifestFactoryTest {
                 start,
                 finish,
                 "config.properties",
+                "CONFIG_INLINE",
+                "query.sql",
                 "sha256:y",
                 "SELECT 1",
                 "./output",
@@ -112,11 +118,40 @@ class RunManifestFactoryTest {
                 start,
                 finish,
                 "config.properties",
+                "CONFIG_FILE",
+                "/home/example/query.sql",
                 "sha256:y",
                 "SELECT 1",
                 "/home/example/output",
                 List.of("xml"));
 
         assertEquals("<output-directory>", manifest.outputDirectory());
+        assertEquals("query.sql", manifest.querySource());
+    }
+
+    @Test
+    void success_shouldRedactAbsoluteQuerySourceToFileName() throws Exception {
+        Path outputDir = Files.createTempDirectory("manifest-factory-query-source-");
+        Path jsonFile = outputDir.resolve("out.json");
+        Files.writeString(jsonFile, "{}", StandardCharsets.UTF_8);
+
+        RunManifest manifest = RunManifestFactory.success(
+                "tool-a",
+                "1.0.0",
+                "run-5",
+                Instant.parse("2026-05-11T06:00:00Z"),
+                Instant.parse("2026-05-11T06:00:01Z"),
+                "config.properties",
+                "CLI_FILE",
+                "/home/secret/path/customers.sql",
+                "sha256:z",
+                "SELECT 1",
+                outputDir,
+                List.of(jsonFile),
+                List.of("json"),
+                1,
+                1);
+
+        assertEquals("customers.sql", manifest.querySource());
     }
 }

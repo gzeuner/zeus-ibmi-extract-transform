@@ -20,6 +20,8 @@ public final class RunManifestJsonSerializer {
                 + "\"finishedAt\":\"" + toStringOrEmpty(manifest.finishedAt()) + "\"," 
                 + "\"durationMillis\":" + manifest.durationMillis() + ","
                 + "\"configSource\":\"" + escape(manifest.configSource()) + "\"," 
+                + "\"querySourceType\":\"" + escape(manifest.querySourceType()) + "\"," 
+                + "\"querySource\":\"" + escape(manifest.querySource()) + "\"," 
                 + "\"queryHash\":\"" + escape(manifest.queryHash()) + "\"," 
                 + "\"queryPreview\":\"" + escape(manifest.queryPreview()) + "\"," 
                 + "\"outputDirectory\":\"" + escape(manifest.outputDirectory()) + "\"," 

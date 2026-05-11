@@ -68,6 +68,41 @@ class CliEndToEndTest {
     }
 
     @Test
+    void dryRun_withQueryFile_shouldUseConfigFileSourceAndWriteManifest() throws Exception {
+        Path outputDir = Files.createTempDirectory("cli-e2e-dryrun-query-file-out-");
+        Path queryFile = Files.createTempFile("cli-e2e-query-", ".sql");
+        Files.writeString(queryFile, "SELECT 1 AS X", StandardCharsets.UTF_8);
+        Path config = createConfigFileWithQueryFile(
+                outputDir,
+                "org.h2.Driver",
+                "jdbc:h2:mem:cli_e2e_dryrun_query_file;MODE=DB2;DB_CLOSE_DELAY=-1",
+                queryFile.toString(),
+                "json",
+                true,
+                true,
+                true);
+
+        ProcessResult result = runCli(
+                List.of("--config", config.toString()),
+                Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy-secret-dryrun-qf"));
+
+        assertEquals(0, result.exitCode());
+        assertTrue(result.stdout().contains("Mode: DRY-RUN"));
+        assertTrue(result.stdout().contains("Query Source: Config file: " + queryFile.getFileName()));
+        assertFalse(result.stdout().contains("dummy-secret-dryrun-qf"));
+        assertFalse(result.stderr().contains("dummy-secret-dryrun-qf"));
+
+        Path manifest = listFiles(outputDir).stream()
+                .filter(path -> path.getFileName().toString().endsWith(".manifest.json"))
+                .max(Comparator.naturalOrder())
+                .orElseThrow();
+        String manifestJson = Files.readString(manifest, StandardCharsets.UTF_8);
+        assertTrue(manifestJson.contains("\"querySourceType\":\"CONFIG_FILE\""));
+        assertTrue(manifestJson.contains("\"querySource\":\"" + queryFile.getFileName() + "\""));
+        assertTrue(manifestJson.contains("\"queryPreview\":\"SELECT 1 AS X\""));
+    }
+
+    @Test
     void execute_againstH2_shouldWriteOutputsAndSuccessManifestWithChecksums() throws Exception {
         Path outputDir = Files.createTempDirectory("cli-e2e-exec-out-");
         Path config = createConfigFile(
@@ -112,6 +147,43 @@ class CliEndToEndTest {
         assertTrue(manifestJson.contains("\"format\":\"jsonl\""));
         assertTrue(manifestJson.contains("\"sizeBytes\":"));
         assertTrue(manifestJson.contains("\"sha256\":\"sha256:"));
+    }
+
+    @Test
+    void execute_withQueryFile_againstH2_shouldWriteOutputsAndSanitizedQuerySource() throws Exception {
+        Path outputDir = Files.createTempDirectory("cli-e2e-exec-query-file-out-");
+        Path queryFile = Files.createTempFile("cli-e2e-exec-query-", ".sql");
+        Files.writeString(queryFile, "SELECT 1 AS ID, 'demo' AS NAME", StandardCharsets.UTF_8);
+        Path config = createConfigFileWithQueryFile(
+                outputDir,
+                "org.h2.Driver",
+                "jdbc:h2:mem:cli_e2e_execute_query_file;MODE=DB2;DB_CLOSE_DELAY=-1",
+                queryFile.toString(),
+                "json,jsonl",
+                true,
+                true,
+                true);
+
+        ProcessResult result = runCli(
+                List.of("--config", config.toString(), "--execute"),
+                Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy-secret-exec-qf"));
+
+        assertEquals(0, result.exitCode());
+        assertTrue(result.stdout().contains("Status: SUCCESS"));
+        assertTrue(result.stdout().contains("Query Source: Config file: " + queryFile.getFileName()));
+        assertFalse(result.stdout().contains("dummy-secret-exec-qf"));
+        assertFalse(result.stderr().contains("dummy-secret-exec-qf"));
+
+        Path manifest = listFiles(outputDir).stream()
+                .filter(path -> path.getFileName().toString().endsWith(".manifest.json"))
+                .max(Comparator.naturalOrder())
+                .orElseThrow();
+        String manifestJson = Files.readString(manifest, StandardCharsets.UTF_8);
+        assertTrue(manifestJson.contains("\"querySourceType\":\"CONFIG_FILE\""));
+        assertTrue(manifestJson.contains("\"querySource\":\"" + queryFile.getFileName() + "\""));
+        assertTrue(manifestJson.contains("\"queryHash\":\"sha256:"));
+        assertTrue(manifestJson.contains("\"queryPreview\":\"SELECT 1 AS ID, 'demo' AS NAME\""));
+        assertTrue(!manifestJson.contains(queryFile.toAbsolutePath().toString().replace('\\', '/')));
     }
 
     @Test
@@ -194,6 +266,24 @@ class CliEndToEndTest {
         assertTrue(result.stderr().contains("Missing value for --config"));
     }
 
+    @Test
+    void missingQueryFile_shouldReturnConfigErrorExitCode2() throws Exception {
+        Path outputDir = Files.createTempDirectory("cli-e2e-missing-query-file-out-");
+        Path config = createConfigFileWithQueryFile(
+                outputDir,
+                "org.h2.Driver",
+                "jdbc:h2:mem:cli_e2e_missing_query_file;MODE=DB2;DB_CLOSE_DELAY=-1",
+                "missing-query-file.sql",
+                "json",
+                true,
+                true,
+                true);
+
+        ProcessResult result = runCli(List.of("--config", config.toString()), Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy"));
+        assertEquals(2, result.exitCode());
+        assertTrue(result.stderr().contains("Query file does not exist"));
+    }
+
     private static ProcessResult runCli(List<String> args, Map<String, String> envOverrides) throws Exception {
         List<String> command = new ArrayList<>();
         command.add(javaCommand());
@@ -245,6 +335,34 @@ class CliEndToEndTest {
             content.append("db.allowEmptyPassword=true\n");
         }
         content.append("query.sql=").append(query).append("\n");
+        content.append("output.directory=").append(outputDir).append("\n");
+        content.append("output.formats=").append(outputFormats).append("\n");
+        content.append("run.manifest.enabled=").append(manifestEnabled).append("\n");
+        Files.writeString(config, content.toString(), StandardCharsets.UTF_8);
+        return config;
+    }
+
+    private static Path createConfigFileWithQueryFile(
+            Path outputDir,
+            String dbDriver,
+            String dbUrl,
+            String queryFile,
+            String outputFormats,
+            boolean manifestEnabled,
+            boolean usePasswordEnv,
+            boolean allowEmptyPassword) throws IOException {
+        Path config = Files.createTempFile("cli-e2e-config-query-file-", ".properties");
+        StringBuilder content = new StringBuilder();
+        content.append("db.driver=").append(dbDriver).append("\n");
+        content.append("db.url=").append(dbUrl).append("\n");
+        content.append("db.user=sa\n");
+        if (usePasswordEnv) {
+            content.append("db.passwordEnv=ZEUS_IBMI_DB_PASSWORD\n");
+        }
+        if (allowEmptyPassword) {
+            content.append("db.allowEmptyPassword=true\n");
+        }
+        content.append("query.file=").append(queryFile).append("\n");
         content.append("output.directory=").append(outputDir).append("\n");
         content.append("output.formats=").append(outputFormats).append("\n");
         content.append("run.manifest.enabled=").append(manifestEnabled).append("\n");

@@ -19,6 +19,8 @@ class RunManifestWriterTest {
                 Instant.parse("2026-05-11T06:00:00Z"),
                 Instant.parse("2026-05-11T06:00:00Z"),
                 "config/example.application.properties",
+                "CONFIG_INLINE",
+                "query.sql",
                 "sha256:abc",
                 "SELECT 1",
                 "./output",

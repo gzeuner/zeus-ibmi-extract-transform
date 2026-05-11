@@ -6,6 +6,8 @@ import de.zeus.ibmi.config.ConfigLoader;
 import de.zeus.ibmi.connection.DriverManagerJdbcConnectionFactory;
 import de.zeus.ibmi.output.OutputExportService;
 import de.zeus.ibmi.output.OutputWriters;
+import de.zeus.ibmi.query.QuerySource;
+import de.zeus.ibmi.query.QuerySourceResolver;
 import de.zeus.ibmi.runmanifest.InputHashCalculator;
 import de.zeus.ibmi.runmanifest.RunManifestFactory;
 import de.zeus.ibmi.runmanifest.RunManifest;
@@ -31,13 +33,14 @@ public final class CliApplication {
     private final VersionProvider versionProvider;
     private final CliHelpRenderer helpRenderer;
     private final CliOutputRenderer outputRenderer;
+    private final QuerySourceResolver querySourceResolver;
 
     public CliApplication(Map<String, String> environment) {
-        this(environment, new VersionProvider(), new CliHelpRenderer(), new CliOutputRenderer());
+        this(environment, new VersionProvider(), new CliHelpRenderer(), new CliOutputRenderer(), new QuerySourceResolver());
     }
 
     CliApplication(Map<String, String> environment, VersionProvider versionProvider) {
-        this(environment, versionProvider, new CliHelpRenderer(), new CliOutputRenderer());
+        this(environment, versionProvider, new CliHelpRenderer(), new CliOutputRenderer(), new QuerySourceResolver());
     }
 
     CliApplication(
@@ -45,10 +48,20 @@ public final class CliApplication {
             VersionProvider versionProvider,
             CliHelpRenderer helpRenderer,
             CliOutputRenderer outputRenderer) {
+        this(environment, versionProvider, helpRenderer, outputRenderer, new QuerySourceResolver());
+    }
+
+    CliApplication(
+            Map<String, String> environment,
+            VersionProvider versionProvider,
+            CliHelpRenderer helpRenderer,
+            CliOutputRenderer outputRenderer,
+            QuerySourceResolver querySourceResolver) {
         this.environment = environment;
         this.versionProvider = versionProvider;
         this.helpRenderer = helpRenderer;
         this.outputRenderer = outputRenderer;
+        this.querySourceResolver = querySourceResolver;
     }
 
     public int run(String[] args, PrintStream out, PrintStream err) {
@@ -76,16 +89,20 @@ public final class CliApplication {
 
     private int runWithConfig(CliArguments args, PrintStream out, String toolVersion) {
         AppConfig config = loadConfig(args);
+        QuerySource querySource = querySourceResolver.resolve(config, args.configOverrides(), args.configPath());
+        AppConfig resolvedConfig = config.withQuery(querySource.queryText());
         ReadOnlyQueryGuard guard = new ReadOnlyQueryGuard();
-        String normalizedQuery = guard.validateOrNormalize(config.query());
+        String normalizedQuery = guard.validateOrNormalize(resolvedConfig.query());
         CliExecutionPlan plan = new CliExecutionPlan(
                 args.configPath(),
                 args.execute(),
-                config.databaseUrl(),
-                config.username(),
-                config.outputDirectory(),
-                config.outputFormatIds(),
-                config.runManifestEnabled(),
+                resolvedConfig.databaseUrl(),
+                resolvedConfig.username(),
+                resolvedConfig.outputDirectory(),
+                resolvedConfig.outputFormatIds(),
+                resolvedConfig.runManifestEnabled(),
+                querySourceDisplay(querySource),
+                querySource.multipleSourcesConfigured(),
                 previewQuery(normalizedQuery));
         outputRenderer.renderExecutionPlan(out, plan);
 
@@ -100,12 +117,14 @@ public final class CliApplication {
                     startedAt,
                     finishedAt,
                     args.configPath().toString(),
-                    InputHashCalculator.sha256For(config, normalizedQuery),
+                    querySource.sourceType().name(),
+                    querySource.source(),
+                    InputHashCalculator.sha256For(resolvedConfig, normalizedQuery),
                     previewQuery(normalizedQuery),
-                    config.outputDirectory(),
-                    config.outputFormatIds());
+                    resolvedConfig.outputDirectory(),
+                    resolvedConfig.outputFormatIds());
             outputRenderer.renderDryRunSummary(out, config.outputFormatIds());
-            Path manifestPath = maybeWriteManifest(config, dryRunManifest);
+            Path manifestPath = maybeWriteManifest(resolvedConfig, dryRunManifest);
             outputRenderer.renderManifestPath(out, manifestPath);
             return ExitCode.SUCCESS.code();
         }
@@ -117,8 +136,13 @@ public final class CliApplication {
                 new OutputExportService(OutputWriters.defaultWriters()),
                 TOOL_NAME,
                 toolVersion);
-        RunManifest manifest = useCase.run(config, args.configPath().toString(), normalizedQuery);
-        Path manifestPath = maybeWriteManifest(config, manifest);
+        RunManifest manifest = useCase.run(
+                resolvedConfig,
+                args.configPath().toString(),
+                querySource.sourceType().name(),
+                querySource.source(),
+                normalizedQuery);
+        Path manifestPath = maybeWriteManifest(resolvedConfig, manifest);
         outputRenderer.renderExecuteSummary(out, manifest);
         outputRenderer.renderManifestPath(out, manifestPath);
         out.println(RunManifestJsonSerializer.toJson(manifest));
@@ -153,6 +177,15 @@ public final class CliApplication {
             return singleLine;
         }
         return singleLine.substring(0, max) + "...";
+    }
+
+    private static String querySourceDisplay(QuerySource querySource) {
+        return switch (querySource.sourceType()) {
+            case CLI_INLINE -> "CLI inline";
+            case CLI_FILE -> "CLI file: " + querySource.source();
+            case CONFIG_INLINE -> "Config inline";
+            case CONFIG_FILE -> "Config file: " + querySource.source();
+        };
     }
 
 }

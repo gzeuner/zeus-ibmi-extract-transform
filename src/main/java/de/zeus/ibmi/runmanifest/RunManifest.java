@@ -13,6 +13,8 @@ public record RunManifest(
         Instant finishedAt,
         long durationMillis,
         String configSource,
+        String querySourceType,
+        String querySource,
         String queryHash,
         String queryPreview,
         String outputDirectory,
@@ -27,6 +29,8 @@ public record RunManifest(
         String osVersion) {
 
     public RunManifest {
+        querySourceType = querySourceType == null ? "" : querySourceType;
+        querySource = querySource == null ? "" : querySource;
         outputFiles = outputFiles == null ? List.of() : List.copyOf(outputFiles);
         outputFormats = outputFormats == null ? List.of() : List.copyOf(outputFormats);
     }

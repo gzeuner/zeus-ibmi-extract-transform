@@ -11,10 +11,13 @@ public record CliExecutionPlan(
         String outputDirectory,
         List<String> outputFormats,
         boolean runManifestEnabled,
+        String querySource,
+        boolean querySourceOverridden,
         String queryPreview) {
 
     public CliExecutionPlan {
         outputFormats = outputFormats == null ? List.of() : List.copyOf(outputFormats);
+        querySource = querySource == null ? "" : querySource;
         queryPreview = queryPreview == null ? "" : queryPreview;
     }
 }

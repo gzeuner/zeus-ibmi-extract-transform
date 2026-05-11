@@ -145,6 +145,80 @@ class CliApplicationTest {
     }
 
     @Test
+    void run_shouldPerformDryRunWithQueryFile() throws Exception {
+        Path queryFile = Files.createTempFile("cli-query-file-", ".sql");
+        Files.writeString(queryFile, "SELECT 1 AS X", StandardCharsets.UTF_8);
+        Path config = createConfigFileWithQueryFile(queryFile);
+        CliApplication app = new CliApplication(Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy"));
+        ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+
+        int exit = app.run(new String[] { "--config", config.toString() }, printStream(outBuffer), printStream(errBuffer));
+
+        assertEquals(0, exit);
+        String out = outBuffer.toString(StandardCharsets.UTF_8);
+        assertTrue(out.contains("Mode: DRY-RUN"));
+        assertTrue(out.contains("Query Source: Config file: " + queryFile.getFileName()));
+        assertTrue(out.contains("Read-only query check: OK"));
+    }
+
+    @Test
+    void run_shouldExecuteWithQueryFileAgainstH2() throws Exception {
+        Path queryFile = Files.createTempFile("cli-query-file-exec-", ".sql");
+        Files.writeString(queryFile, "SELECT 1 AS X", StandardCharsets.UTF_8);
+        Path config = createConfigFileWithQueryFile(queryFile);
+        CliApplication app = new CliApplication(Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy"));
+        ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+
+        int exit = app.run(
+                new String[] { "--config", config.toString(), "--execute" },
+                printStream(outBuffer),
+                printStream(errBuffer));
+
+        assertEquals(0, exit);
+        String out = outBuffer.toString(StandardCharsets.UTF_8);
+        assertTrue(out.contains("Mode: EXECUTE"));
+        assertTrue(out.contains("Status: SUCCESS"));
+        assertTrue(out.contains("\"querySourceType\":\"CONFIG_FILE\""));
+        assertTrue(out.contains("\"querySource\":\"" + queryFile.getFileName() + "\""));
+        assertTrue(out.contains("\"queryHash\":\"sha256:"));
+    }
+
+    @Test
+    void run_shouldFailWithConfigErrorWhenQueryFileMissing() throws Exception {
+        Path config = createConfigFileWithQueryFile(Path.of("missing-query-file.sql"));
+        CliApplication app = new CliApplication(Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy"));
+        ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+
+        int exit = app.run(new String[] { "--config", config.toString() }, printStream(outBuffer), printStream(errBuffer));
+
+        assertEquals(2, exit);
+        assertTrue(errBuffer.toString(StandardCharsets.UTF_8).contains("Query file does not exist"));
+    }
+
+    @Test
+    void run_shouldShowQuerySourceNoteWhenMultipleSourcesConfigured() throws Exception {
+        Path queryFile = Files.createTempFile("cli-query-file-multi-", ".sql");
+        Files.writeString(queryFile, "SELECT 1 AS X", StandardCharsets.UTF_8);
+        Path config = createConfigFileWithQueryFile(queryFile);
+        CliApplication app = new CliApplication(Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy"));
+        ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+
+        int exit = app.run(
+                new String[] { "--config", config.toString(), "--query", "SELECT 7 AS X" },
+                printStream(outBuffer),
+                printStream(errBuffer));
+
+        assertEquals(0, exit);
+        String out = outBuffer.toString(StandardCharsets.UTF_8);
+        assertTrue(out.contains("Query Source: CLI inline"));
+        assertTrue(out.contains("Query Source Note: Multiple query sources configured; highest-priority source is used."));
+    }
+
+    @Test
     void run_shouldReturnJdbcExitCodeWhenExecutionFails() throws Exception {
         Path outputDir = Files.createTempDirectory("cli-out-invalid-driver-check-");
         Path config = createConfigFileWithInvalidDriver(outputDir);
@@ -206,6 +280,21 @@ class CliApplicationTest {
                 + "db.user=sa\n"
                 + "db.passwordEnv=ZEUS_IBMI_DB_PASSWORD\n"
                 + "query.sql=SELECT 1 AS X\n"
+                + "output.directory=" + outputDir + "\n"
+                + "output.formats=json\n"
+                + "run.manifest.enabled=true\n");
+        return file;
+    }
+
+    private static Path createConfigFileWithQueryFile(Path queryFile) throws Exception {
+        Path outputDir = Files.createTempDirectory("cli-out-query-file-");
+        Path file = Files.createTempFile("cli-config-query-file-", ".properties");
+        Files.writeString(file, ""
+                + "db.driver=org.h2.Driver\n"
+                + "db.url=jdbc:h2:mem:cli;MODE=DB2;DB_CLOSE_DELAY=-1\n"
+                + "db.user=sa\n"
+                + "db.passwordEnv=ZEUS_IBMI_DB_PASSWORD\n"
+                + "query.file=" + queryFile + "\n"
                 + "output.directory=" + outputDir + "\n"
                 + "output.formats=json\n"
                 + "run.manifest.enabled=true\n");

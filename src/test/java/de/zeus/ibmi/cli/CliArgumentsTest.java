@@ -20,6 +20,7 @@ class CliArgumentsTest {
                 "--db-password", "secret",
                 "--db-password-env", "DB_PASSWORD",
                 "--query", "SELECT 1",
+                "--query-file", "queries/customers.sql",
                 "--output-dir", "target/out",
                 "--output-formats", "json,csv",
                 "--manifest-disabled",
@@ -38,6 +39,7 @@ class CliArgumentsTest {
         assertEquals("secret", args.configOverrides().get("db.password"));
         assertEquals("DB_PASSWORD", args.configOverrides().get("db.passwordEnv"));
         assertEquals("SELECT 1", args.configOverrides().get("query.sql"));
+        assertEquals("queries/customers.sql", args.configOverrides().get("query.file"));
         assertEquals("target/out", args.configOverrides().get("output.directory"));
         assertEquals("json,csv", args.configOverrides().get("output.formats"));
         assertEquals("false", args.configOverrides().get("run.manifest.enabled"));
@@ -75,6 +77,22 @@ class CliArgumentsTest {
                 CliArgumentException.class,
                 () -> CliArguments.parse(new String[] { "--config", "--execute" }));
         assertEquals("Missing value for --config", ex.getMessage());
+    }
+
+    @Test
+    void parse_shouldFailWhenQueryFileHasMissingValue() {
+        CliArgumentException ex = assertThrows(
+                CliArgumentException.class,
+                () -> CliArguments.parse(new String[] { "--query-file" }));
+        assertEquals("Missing value for --query-file", ex.getMessage());
+    }
+
+    @Test
+    void parse_shouldFailWhenQueryFileValueLooksLikeOption() {
+        CliArgumentException ex = assertThrows(
+                CliArgumentException.class,
+                () -> CliArguments.parse(new String[] { "--query-file", "--execute" }));
+        assertEquals("Missing value for --query-file", ex.getMessage());
     }
 
     @Test

@@ -54,6 +54,9 @@ public record CliArguments(
                 case "--query":
                     overrides.put("query.sql", readValue(args, ++i, "--query"));
                     break;
+                case "--query-file":
+                    overrides.put("query.file", readValue(args, ++i, "--query-file"));
+                    break;
                 case "--output-dir":
                     overrides.put("output.directory", readValue(args, ++i, "--output-dir"));
                     break;

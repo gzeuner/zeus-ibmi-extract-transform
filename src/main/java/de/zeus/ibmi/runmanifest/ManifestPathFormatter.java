@@ -6,6 +6,7 @@ final class ManifestPathFormatter {
 
     static final String REDACTED_OUTPUT_DIRECTORY = "<output-directory>";
     static final String REDACTED_OUTPUT_FILE = "<output-file>";
+    static final String REDACTED_QUERY_FILE = "<query-file>";
 
     private ManifestPathFormatter() {
     }
@@ -55,6 +56,25 @@ final class ManifestPathFormatter {
         }
         String fallback = normalize(absoluteFile.toString());
         return looksAbsolute(fallback) ? REDACTED_OUTPUT_FILE : fallback;
+    }
+
+    static String querySourceDisplay(String configuredQuerySource) {
+        if (configuredQuerySource == null) {
+            return "";
+        }
+        String normalized = normalize(configuredQuerySource.trim());
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        if (!looksAbsolute(normalized)) {
+            return normalized;
+        }
+        Path fileName = Path.of(normalized).getFileName();
+        if (fileName == null) {
+            return REDACTED_QUERY_FILE;
+        }
+        String safeName = normalize(fileName.toString());
+        return safeName.isBlank() ? REDACTED_QUERY_FILE : safeName;
     }
 
     private static boolean isSafeRelative(String value) {

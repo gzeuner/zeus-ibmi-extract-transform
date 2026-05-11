@@ -13,6 +13,8 @@ public final class CliHelpRenderer {
                 .append(".jar --config config/example.application.properties --output-formats xml,json,jsonl,csv,md --execute\n");
         help.append("  java -jar ").append(toolName)
                 .append(".jar --config config/example.application.properties --db-driver org.h2.Driver --db-url \"jdbc:h2:mem:demo_readonly;MODE=DB2;DB_CLOSE_DELAY=-1\" --query \"SELECT 1 AS ID\" --execute\n\n");
+        help.append("  java -jar ").append(toolName)
+                .append(".jar --config config/example.application.properties --query-file queries/customers.sql --execute\n\n");
         help.append("General:\n");
         help.append("  -h, --help                      Show help\n");
         help.append("  -v, --version                   Show version\n\n");
@@ -27,6 +29,7 @@ public final class CliHelpRenderer {
         help.append("  --allow-empty-password          Allow empty db.password (for local/offline scenarios)\n\n");
         help.append("Query:\n");
         help.append("  --query <sql>                   Override SQL query\n");
+        help.append("  --query-file <file>             Override SQL query file (UTF-8)\n");
         help.append("  --fetch-size <n>                Override JDBC fetch size\n");
         help.append("  --query-timeout-seconds <n>     Override JDBC query timeout in seconds\n\n");
         help.append("Output:\n");
