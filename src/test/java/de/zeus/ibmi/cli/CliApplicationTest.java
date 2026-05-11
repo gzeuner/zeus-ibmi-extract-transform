@@ -1,6 +1,7 @@
 package de.zeus.ibmi.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.zeus.ibmi.version.VersionProvider;
@@ -82,6 +83,30 @@ class CliApplicationTest {
     }
 
     @Test
+    void run_shouldFailWithConfigErrorForUnknownOption() {
+        CliApplication app = new CliApplication(Map.of());
+        ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+
+        int exit = app.run(new String[] { "--unknown" }, printStream(outBuffer), printStream(errBuffer));
+
+        assertEquals(2, exit);
+        assertTrue(errBuffer.toString(StandardCharsets.UTF_8).contains("Unknown argument: --unknown"));
+    }
+
+    @Test
+    void run_shouldFailWithConfigErrorForMissingOptionValue() {
+        CliApplication app = new CliApplication(Map.of());
+        ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+
+        int exit = app.run(new String[] { "--config" }, printStream(outBuffer), printStream(errBuffer));
+
+        assertEquals(2, exit);
+        assertTrue(errBuffer.toString(StandardCharsets.UTF_8).contains("Missing value for --config"));
+    }
+
+    @Test
     void run_shouldPerformDryRunByDefault() throws Exception {
         Path config = createConfigFile();
         CliApplication app = new CliApplication(Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy"));
@@ -92,8 +117,10 @@ class CliApplicationTest {
 
         assertEquals(0, exit);
         String out = outBuffer.toString(StandardCharsets.UTF_8);
-        assertTrue(out.contains("Dry run only"));
+        assertTrue(out.contains("Mode: DRY-RUN"));
+        assertTrue(out.contains("Status: DRY_RUN"));
         assertTrue(out.contains("Read-only query check: OK"));
+        assertTrue(out.contains("Hint: Add --execute to run read-only query execution."));
     }
 
     @Test
@@ -109,6 +136,9 @@ class CliApplicationTest {
                 printStream(errBuffer));
 
         assertEquals(0, exit);
+        assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("Mode: EXECUTE"));
+        assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("Status: SUCCESS"));
+        assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("Row Count: 1"));
         assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("\"status\":\"SUCCESS\""));
         assertTrue(outBuffer.toString(StandardCharsets.UTF_8)
                 .contains("\"toolVersion\":\"" + VersionProvider.DEVELOPMENT_FALLBACK_VERSION + "\""));
@@ -128,6 +158,7 @@ class CliApplicationTest {
                 printStream(errBuffer));
 
         assertEquals(4, exit);
+        assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("Status: FAILED"));
         assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("\"status\":\"FAILED\""));
         assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("\"errorClass\":\"de.zeus.ibmi.selection.QueryExecutionException\""));
         Path manifest = Files.list(outputDir)
@@ -148,8 +179,8 @@ class CliApplicationTest {
 
         String out = outBuffer.toString(StandardCharsets.UTF_8);
         String err = errBuffer.toString(StandardCharsets.UTF_8);
-        assertTrue(!out.contains("secret123"));
-        assertTrue(!err.contains("secret123"));
+        assertFalse(out.contains("secret123"));
+        assertFalse(err.contains("secret123"));
     }
 
     private static Path createConfigFile() throws Exception {

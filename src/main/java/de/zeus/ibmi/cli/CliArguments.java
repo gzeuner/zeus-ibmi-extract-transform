@@ -1,6 +1,5 @@
 package de.zeus.ibmi.cli;
 
-import de.zeus.ibmi.config.ConfigValidationException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,7 +76,7 @@ public record CliArguments(
                     overrides.put("db.allowEmptyPassword", "true");
                     break;
                 default:
-                    throw new ConfigValidationException("Unknown argument: " + arg);
+                    throw new CliArgumentException("Unknown argument: " + arg + ". Use --help for usage.");
             }
         }
         return new CliArguments(help, version, execute, configPath, Map.copyOf(overrides));
@@ -85,8 +84,12 @@ public record CliArguments(
 
     private static String readValue(String[] args, int idx, String option) {
         if (idx >= args.length) {
-            throw new ConfigValidationException("Missing value for " + option);
+            throw new CliArgumentException("Missing value for " + option);
         }
-        return args[idx];
+        String value = args[idx];
+        if (value.startsWith("-")) {
+            throw new CliArgumentException("Missing value for " + option);
+        }
+        return value;
     }
 }

@@ -55,8 +55,10 @@ class CliEndToEndTest {
                 Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy-secret-dryrun"));
 
         assertEquals(0, result.exitCode());
-        assertTrue(result.stdout().contains("Dry run only"));
+        assertTrue(result.stdout().contains("Mode: DRY-RUN"));
+        assertTrue(result.stdout().contains("Status: DRY_RUN"));
         assertTrue(result.stdout().contains("Planned output files"));
+        assertTrue(result.stdout().contains("Hint: Add --execute to run read-only query execution."));
         assertFalse(result.stdout().contains("dummy-secret-dryrun"));
         assertFalse(result.stderr().contains("dummy-secret-dryrun"));
 
@@ -83,6 +85,10 @@ class CliEndToEndTest {
                 Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy-secret-exec"));
 
         assertEquals(0, result.exitCode());
+        assertTrue(result.stdout().contains("Mode: EXECUTE"));
+        assertTrue(result.stdout().contains("Status: SUCCESS"));
+        assertTrue(result.stdout().contains("Row Count: 2"));
+        assertTrue(result.stdout().contains("Output Files:"));
         assertFalse(result.stdout().contains("dummy-secret-exec"));
         assertFalse(result.stderr().contains("dummy-secret-exec"));
 
@@ -147,6 +153,7 @@ class CliEndToEndTest {
                 Map.of("ZEUS_IBMI_DB_PASSWORD", "dummy-secret-jdbc"));
 
         assertEquals(4, result.exitCode());
+        assertTrue(result.stdout().contains("Status: FAILED"));
         assertFalse(result.stdout().contains("dummy-secret-jdbc"));
         assertFalse(result.stderr().contains("dummy-secret-jdbc"));
 
@@ -157,6 +164,34 @@ class CliEndToEndTest {
         String manifestJson = Files.readString(manifest, StandardCharsets.UTF_8);
         assertTrue(manifestJson.contains("\"status\":\"FAILED\""));
         assertTrue(manifestJson.contains("\"errorClass\":\"de.zeus.ibmi.selection.QueryExecutionException\""));
+    }
+
+    @Test
+    void execute_withoutConfig_shouldReturnConfigError() throws Exception {
+        ProcessResult result = runCli(List.of("--execute"), Map.of());
+        assertEquals(2, result.exitCode());
+        assertTrue(result.stderr().contains("Missing required argument: --config <file>"));
+    }
+
+    @Test
+    void unknownOption_shouldReturnConfigError() throws Exception {
+        ProcessResult result = runCli(List.of("--unknown"), Map.of());
+        assertEquals(2, result.exitCode());
+        assertTrue(result.stderr().contains("Unknown argument: --unknown"));
+    }
+
+    @Test
+    void missingOptionValue_shouldReturnConfigError() throws Exception {
+        ProcessResult result = runCli(List.of("--config"), Map.of());
+        assertEquals(2, result.exitCode());
+        assertTrue(result.stderr().contains("Missing value for --config"));
+    }
+
+    @Test
+    void optionInsteadOfValue_shouldReturnConfigError() throws Exception {
+        ProcessResult result = runCli(List.of("--config", "--execute"), Map.of());
+        assertEquals(2, result.exitCode());
+        assertTrue(result.stderr().contains("Missing value for --config"));
     }
 
     private static ProcessResult runCli(List<String> args, Map<String, String> envOverrides) throws Exception {
