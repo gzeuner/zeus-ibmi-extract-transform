@@ -64,6 +64,7 @@
                     <archive>
                         <manifest>
                             <mainClass>de.zeus.ibmi.cli.Main</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
                     </archive>
                 </configuration>

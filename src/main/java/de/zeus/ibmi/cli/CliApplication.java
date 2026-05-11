@@ -15,6 +15,7 @@ import de.zeus.ibmi.security.SecretMasker;
 import de.zeus.ibmi.selection.ReadOnlyJdbcQueryExecutor;
 import de.zeus.ibmi.selection.ReadOnlyQueryGuard;
 import de.zeus.ibmi.selection.RunSelectionAndExportUseCase;
+import de.zeus.ibmi.version.VersionProvider;
 import java.io.PrintStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -24,27 +25,36 @@ import java.util.UUID;
 
 public final class CliApplication {
 
+    private static final String TOOL_NAME = "zeus-ibmi-extract-transform";
+
     private final Map<String, String> environment;
+    private final VersionProvider versionProvider;
 
     public CliApplication(Map<String, String> environment) {
+        this(environment, new VersionProvider());
+    }
+
+    CliApplication(Map<String, String> environment, VersionProvider versionProvider) {
         this.environment = environment;
+        this.versionProvider = versionProvider;
     }
 
     public int run(String[] args, PrintStream out, PrintStream err) {
         try {
             CliArguments parsed = CliArguments.parse(args == null ? new String[0] : args);
+            String toolVersion = versionProvider.resolve();
             if (args == null || args.length == 0 || parsed.help()) {
-                printHelp(out);
+                printHelp(out, toolVersion);
                 return ExitCode.SUCCESS.code();
             }
             if (parsed.version()) {
-                out.println("zeus-ibmi-extract-transform " + Main.VERSION);
+                out.println(TOOL_NAME + " " + toolVersion);
                 return ExitCode.SUCCESS.code();
             }
             if (parsed.configPath() == null) {
                 throw new ConfigValidationException("Missing required argument: --config <file>");
             }
-            return runWithConfig(parsed, out);
+            return runWithConfig(parsed, out, toolVersion);
         } catch (RuntimeException ex) {
             ExitCode code = ExitCodeMapper.map(ex);
             err.println("Error: " + SecretMasker.maskSensitive(ex.getMessage()));
@@ -52,7 +62,7 @@ public final class CliApplication {
         }
     }
 
-    private int runWithConfig(CliArguments args, PrintStream out) {
+    private int runWithConfig(CliArguments args, PrintStream out, String toolVersion) {
         AppConfig config;
         try {
             config = ConfigLoader.load(args.configPath(), environment, args.configOverrides());
@@ -76,8 +86,8 @@ public final class CliApplication {
             Instant finishedAt = Instant.now();
             String runId = "run-" + UUID.randomUUID();
             RunManifest dryRunManifest = RunManifestFactory.dryRun(
-                    "zeus-ibmi-extract-transform",
-                    Main.VERSION,
+                    TOOL_NAME,
+                    toolVersion,
                     runId,
                     startedAt,
                     finishedAt,
@@ -97,8 +107,8 @@ public final class CliApplication {
                         new DriverManagerJdbcConnectionFactory(),
                         guard),
                 new OutputExportService(OutputWriters.defaultWriters()),
-                "zeus-ibmi-extract-transform",
-                Main.VERSION);
+                TOOL_NAME,
+                toolVersion);
         RunManifest manifest = useCase.run(config, args.configPath().toString(), normalizedQuery);
         maybeWriteManifest(config, manifest, out);
         out.println(RunManifestJsonSerializer.toJson(manifest));
@@ -128,8 +138,8 @@ public final class CliApplication {
         return singleLine.substring(0, max) + "...";
     }
 
-    private static void printHelp(PrintStream out) {
-        out.println("zeus-ibmi-extract-transform " + Main.VERSION);
+    private static void printHelp(PrintStream out, String toolVersion) {
+        out.println(TOOL_NAME + " " + toolVersion);
         out.println("Usage:");
         out.println("  --help | -h                  Show help");
         out.println("  --version | -v               Show version");

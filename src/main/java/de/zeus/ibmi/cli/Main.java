@@ -2,8 +2,6 @@ package de.zeus.ibmi.cli;
 
 public final class Main {
 
-    public static final String VERSION = "0.1.0-SNAPSHOT";
-
     private Main() {
     }
 

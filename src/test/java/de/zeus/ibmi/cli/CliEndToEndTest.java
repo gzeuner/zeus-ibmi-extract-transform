@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.zeus.ibmi.version.VersionProvider;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -33,7 +34,7 @@ class CliEndToEndTest {
     void version_shouldReturnExitCodeZeroAndVersion() throws Exception {
         ProcessResult result = runCli(List.of("--version"), Map.of());
         assertEquals(0, result.exitCode());
-        assertTrue(result.stdout().contains(Main.VERSION));
+        assertTrue(result.stdout().contains(VersionProvider.DEVELOPMENT_FALLBACK_VERSION));
     }
 
     @Test
@@ -98,6 +99,7 @@ class CliEndToEndTest {
                 .orElseThrow();
         String manifestJson = Files.readString(manifest, StandardCharsets.UTF_8);
         assertTrue(manifestJson.contains("\"status\":\"SUCCESS\""));
+        assertTrue(manifestJson.contains("\"toolVersion\":\"" + VersionProvider.DEVELOPMENT_FALLBACK_VERSION + "\""));
         assertTrue(manifestJson.contains("\"rowCount\":2"));
         assertTrue(manifestJson.contains("\"format\":\"jsonl\""));
         assertTrue(manifestJson.contains("\"sizeBytes\":"));
