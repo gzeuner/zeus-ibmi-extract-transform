@@ -20,6 +20,8 @@ class RunManifestJsonSerializerTest {
                 Instant.parse("2026-05-11T06:00:05Z"),
                 5000L,
                 "config/example.application.properties",
+                "CLI_INLINE",
+                "CLI inline",
                 "sha256:abc123456",
                 "SELECT 1",
                 "./output",
@@ -55,6 +57,8 @@ class RunManifestJsonSerializerTest {
         assertTrue(json.contains("\"status\":\"SUCCESS\""));
         assertTrue(json.contains("\"dryRun\":false"));
         assertTrue(json.contains("\"durationMillis\":5000"));
+        assertTrue(json.contains("\"querySourceType\":\"CLI_INLINE\""));
+        assertTrue(json.contains("\"querySource\":\"CLI inline\""));
         assertTrue(json.contains("\"queryHash\":\"sha256:abc123456\""));
         assertTrue(json.contains("\"queryPreview\":\"SELECT 1\""));
         assertTrue(json.contains("\"outputDirectory\":\"./output\""));
@@ -82,6 +86,8 @@ class RunManifestJsonSerializerTest {
                 Instant.parse("2026-05-11T06:00:01Z"),
                 1000L,
                 "config/example.application.properties",
+                "CONFIG_FILE",
+                "customers.sql",
                 "sha256:abc123456",
                 "SELECT 1",
                 "<output-directory>",
@@ -105,6 +111,7 @@ class RunManifestJsonSerializerTest {
         String json = RunManifestJsonSerializer.toJson(manifest);
 
         assertTrue(json.contains("\"outputDirectory\":\"<output-directory>\""));
+        assertTrue(json.contains("\"querySource\":\"customers.sql\""));
         assertTrue(json.contains("\"fileName\":\"run-002.jsonl\""));
         assertTrue(json.contains("\"sizeBytes\":88"));
         assertTrue(json.contains("\"sha256\":\"sha256:abcd\""));

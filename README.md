@@ -45,6 +45,13 @@ java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar \
   --execute
 ```
 
+Dry-Run mit SQL-Datei (UTF-8):
+```bash
+java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar \
+  --config config/example.application.properties \
+  --query-file examples/queries/sample-customers.sql
+```
+
 ## 4. Beispielkonfiguration
 Beispieldatei:
 - `config/example.application.properties`
@@ -57,6 +64,7 @@ Wichtige Properties:
 - `db.passwordEnv` (empfohlen)
 - `db.allowEmptyPassword`
 - `query.sql`
+- `query.file`
 - `output.directory`
 - `output.formats`
 - `run.manifest.enabled`
@@ -65,6 +73,11 @@ Wichtige Properties:
 
 Prioritaet:
 - CLI-Argumente > ENV > Config-Datei > Defaults
+
+Query-Quelle (effektive SQL):
+- `--query` gewinnt vor `--query-file`
+- `--query-file` gewinnt vor `query.sql`
+- `query.sql` gewinnt vor `query.file`
 
 ## 5. CLI Usage
 ```text
@@ -85,6 +98,7 @@ Database:
 
 Query:
   --query <sql>
+  --query-file <file>
   --fetch-size <n>
   --query-timeout-seconds <n>
 
@@ -108,6 +122,7 @@ Falls diese Metadaten lokal (z. B. in IDE/Test-Classpath ohne gebautes Jar) nich
 ## 6. Dry-Run vs Execute
 Dry-Run ist Default:
 - ohne `--execute` wird keine JDBC-Query ausgefuehrt
+- Query-Quelle wird aufgeloest (`--query`, `--query-file`, `query.sql`, `query.file`)
 - Query-Guard und Konfiguration werden validiert
 - geplante Outputs werden angezeigt
 - Secrets werden maskiert
@@ -134,6 +149,8 @@ Manifest-Felder (Auszug):
 - status (`SUCCESS`, `FAILED`, `DRY_RUN`)
 - dryRun
 - configSource (ohne Secret-Werte)
+- querySourceType (`CLI_INLINE`, `CLI_FILE`, `CONFIG_INLINE`, `CONFIG_FILE`)
+- querySource (sichere Anzeige, ohne absolute lokale Pfade)
 - queryHash
 - queryPreview (gekuerzt)
 - outputDirectory
@@ -164,6 +181,11 @@ Hinweise:
 - DB2 for i nutzt oft Library-/Schema-Konzepte, die vom Naming-Mode abhaengen (`sql` vs `system`).
 - CCSID/Encoding sollte fuer produktive Umgebungen explizit getestet werden.
 - V1 ist read-only-first (SELECT/WITH Guardrail), aber kein vollstaendiger Schutz gegen jede Fehlkonfiguration.
+
+Hinweis zu SQL-Dateien:
+- SQL-Dateien werden als UTF-8 gelesen.
+- Query-Dateien koennen fachliche Tabellen-/Spaltennamen enthalten; keine Secrets in SQL-Dateien ablegen.
+- Read-only Guardrails bleiben auch bei `query.file` aktiv.
 
 Weitere Details:
 - `docs/ibmi-jt400-notes.md`

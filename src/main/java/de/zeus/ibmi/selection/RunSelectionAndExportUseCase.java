@@ -31,7 +31,12 @@ public final class RunSelectionAndExportUseCase {
         this.toolVersion = toolVersion;
     }
 
-    public RunManifest run(AppConfig config, String configSource, String normalizedQuery) {
+    public RunManifest run(
+            AppConfig config,
+            String configSource,
+            String querySourceType,
+            String querySource,
+            String normalizedQuery) {
         Instant startedAt = Instant.now();
         String runId = "run-" + UUID.randomUUID();
         String safeNormalizedQuery = normalizedQuery == null ? "" : normalizedQuery;
@@ -58,6 +63,8 @@ public final class RunSelectionAndExportUseCase {
                     startedAt,
                     finishedAt,
                     configSource,
+                    querySourceType,
+                    querySource,
                     queryHash,
                     queryPreview,
                     outputDir,
@@ -77,6 +84,8 @@ public final class RunSelectionAndExportUseCase {
                     startedAt,
                     finishedAt,
                     configSource,
+                    querySourceType,
+                    querySource,
                     queryHash,
                     queryPreview,
                     Path.of(config.outputDirectory()),

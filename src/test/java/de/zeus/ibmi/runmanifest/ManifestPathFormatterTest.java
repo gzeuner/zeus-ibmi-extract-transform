@@ -39,4 +39,14 @@ class ManifestPathFormatterTest {
         Path outputFile = Path.of("/tmp/another/place/data.json");
         assertEquals("data.json", ManifestPathFormatter.outputFilePathDisplay(outputDir, outputFile));
     }
+
+    @Test
+    void querySourceDisplay_shouldRedactAbsolutePathToFileName() {
+        assertEquals("customers.sql", ManifestPathFormatter.querySourceDisplay("/home/dev/sql/customers.sql"));
+    }
+
+    @Test
+    void querySourceDisplay_shouldKeepRelativePathReadable() {
+        assertEquals("queries/customers.sql", ManifestPathFormatter.querySourceDisplay("queries\\customers.sql"));
+    }
 }

@@ -17,6 +17,10 @@ public final class CliOutputRenderer {
         out.println("Output Directory: " + mask(plan.outputDirectory()));
         out.println("Output Formats: " + join(plan.outputFormats()));
         out.println("Run manifest enabled: " + plan.runManifestEnabled());
+        out.println("Query Source: " + mask(plan.querySource()));
+        if (plan.querySourceOverridden()) {
+            out.println("Query Source Note: Multiple query sources configured; highest-priority source is used.");
+        }
         out.println("Read-only query check: OK");
         out.println("Query Preview: " + mask(plan.queryPreview()));
     }

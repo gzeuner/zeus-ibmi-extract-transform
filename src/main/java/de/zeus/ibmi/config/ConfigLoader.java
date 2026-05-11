@@ -41,6 +41,7 @@ public final class ConfigLoader {
         String url = pick(cliOverrides, "db.url", env, "ZEUS_IBMI_DB_URL", props.getProperty("db.url"), null);
         String user = pick(cliOverrides, "db.user", env, "ZEUS_IBMI_DB_USER", props.getProperty("db.user"), null);
         String query = pick(cliOverrides, "query.sql", env, "ZEUS_IBMI_QUERY", props.getProperty("query.sql"), null);
+        String queryFile = pick(cliOverrides, "query.file", env, "ZEUS_IBMI_QUERY_FILE", props.getProperty("query.file"), null);
         String formatsCsv = pick(cliOverrides, "output.formats", env, "ZEUS_IBMI_OUTPUT_FORMATS", props.getProperty("output.formats"), "xml,json,csv,md");
         String outputDirectory = pick(cliOverrides, "output.directory", env, "ZEUS_IBMI_OUTPUT_DIRECTORY", props.getProperty("output.directory"), null);
 
@@ -71,6 +72,7 @@ public final class ConfigLoader {
                 password,
                 passwordEnvName,
                 query,
+                queryFile,
                 outputDirectory,
                 formats,
                 runManifestEnabled,

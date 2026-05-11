@@ -10,6 +10,7 @@ public record AppConfig(
         String password,
         String passwordEnvName,
         String query,
+        String queryFile,
         String outputDirectory,
         List<OutputFormat> outputFormats,
         boolean runManifestEnabled,
@@ -24,6 +25,7 @@ public record AppConfig(
         password = password == null ? null : password;
         passwordEnvName = trimToNull(passwordEnvName);
         query = trimToNull(query);
+        queryFile = trimToNull(queryFile);
         outputDirectory = trimToNull(outputDirectory);
         if (outputFormats == null || outputFormats.isEmpty()) {
             outputFormats = List.of(OutputFormat.XML, OutputFormat.JSON, OutputFormat.CSV, OutputFormat.MD);
@@ -54,8 +56,8 @@ public record AppConfig(
         if (databaseUrl == null) {
             throw new ConfigValidationException("db.url is required");
         }
-        if (query == null) {
-            throw new ConfigValidationException("query.sql is required");
+        if (query == null && queryFile == null) {
+            throw new ConfigValidationException("query.sql or query.file is required");
         }
         if (outputDirectory == null) {
             throw new ConfigValidationException("output.directory is required");
@@ -63,6 +65,23 @@ public record AppConfig(
         if ((password == null || password.isEmpty()) && !allowEmptyPassword && !isH2Url(databaseUrl)) {
             throw new ConfigValidationException("db.password is required unless allowEmptyPassword=true or H2 is used.");
         }
+    }
+
+    public AppConfig withQuery(String resolvedQuery) {
+        return new AppConfig(
+                databaseDriver,
+                databaseUrl,
+                username,
+                password,
+                passwordEnvName,
+                resolvedQuery,
+                queryFile,
+                outputDirectory,
+                outputFormats,
+                runManifestEnabled,
+                fetchSize,
+                queryTimeoutSeconds,
+                allowEmptyPassword);
     }
 
     private static boolean isH2Url(String url) {

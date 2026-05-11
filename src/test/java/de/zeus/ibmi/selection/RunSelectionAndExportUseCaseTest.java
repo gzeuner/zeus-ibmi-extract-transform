@@ -54,6 +54,7 @@ class RunSelectionAndExportUseCaseTest {
                 "",
                 null,
                 "SELECT ID, NAME FROM TEST_DATA ORDER BY ID",
+                null,
                 outputDir.toString(),
                 List.of(OutputFormat.XML, OutputFormat.JSON, OutputFormat.JSONL, OutputFormat.CSV, OutputFormat.MD),
                 true,
@@ -64,6 +65,8 @@ class RunSelectionAndExportUseCaseTest {
         RunManifest manifest = useCase.run(
                 config,
                 "test-config.properties",
+                "CONFIG_INLINE",
+                "query.sql",
                 "SELECT ID, NAME FROM TEST_DATA ORDER BY ID");
 
         assertEquals("SUCCESS", manifest.status());
@@ -72,6 +75,8 @@ class RunSelectionAndExportUseCaseTest {
         assertTrue(manifest.durationMillis() >= 0L);
         assertTrue(manifest.queryHash().startsWith("sha256:"));
         assertTrue(manifest.queryPreview().contains("SELECT ID, NAME"));
+        assertEquals("CONFIG_INLINE", manifest.querySourceType());
+        assertEquals("query.sql", manifest.querySource());
         assertEquals("test-config.properties", manifest.configSource());
         assertEquals("<output-directory>", manifest.outputDirectory());
         assertEquals(5, manifest.outputFiles().size());
@@ -103,6 +108,7 @@ class RunSelectionAndExportUseCaseTest {
                 "",
                 null,
                 "SELECT ID, NAME FROM MISSING_TABLE",
+                null,
                 outputDir.toString(),
                 List.of(OutputFormat.XML),
                 true,
@@ -113,6 +119,8 @@ class RunSelectionAndExportUseCaseTest {
         RunManifest manifest = useCase.run(
                 config,
                 "test-config.properties",
+                "CONFIG_INLINE",
+                "query.sql",
                 "SELECT ID, NAME FROM MISSING_TABLE");
 
         assertEquals("FAILED", manifest.status());
@@ -122,6 +130,8 @@ class RunSelectionAndExportUseCaseTest {
         assertTrue(manifest.outputFiles().isEmpty());
         assertTrue(manifest.queryHash().startsWith("sha256:"));
         assertTrue(manifest.queryPreview().contains("MISSING_TABLE"));
+        assertEquals("CONFIG_INLINE", manifest.querySourceType());
+        assertEquals("query.sql", manifest.querySource());
     }
 
     @Test
@@ -145,6 +155,7 @@ class RunSelectionAndExportUseCaseTest {
                 "",
                 null,
                 "SELECT ID, NAME FROM TEST_DATA ORDER BY ID",
+                null,
                 outputDir.toString(),
                 List.of(OutputFormat.XML, OutputFormat.JSON),
                 true,
@@ -155,10 +166,14 @@ class RunSelectionAndExportUseCaseTest {
         RunManifest manifest = useCase.run(
                 config,
                 "test-config.properties",
+                "CONFIG_INLINE",
+                "query.sql",
                 "SELECT ID, NAME FROM TEST_DATA ORDER BY ID");
 
         assertEquals("FAILED", manifest.status());
         assertEquals("<output-directory>", manifest.outputDirectory());
+        assertEquals("CONFIG_INLINE", manifest.querySourceType());
+        assertEquals("query.sql", manifest.querySource());
         assertTrue(manifest.errorClass().contains("OutputWriteException"));
         assertEquals(1, manifest.outputFiles().size());
         assertEquals("xml", manifest.outputFiles().get(0).format());

@@ -145,4 +145,41 @@ class ConfigLoaderTest {
         ConfigValidationException ex = assertThrows(ConfigValidationException.class, () -> ConfigLoader.load(file, Map.of()));
         assertTrue(ex.getMessage().contains("db.password is required"));
     }
+
+    @Test
+    void load_shouldReadQueryFileProperty() throws Exception {
+        Path outputDir = Files.createTempDirectory("cfg-query-file-out-");
+        Path file = Files.createTempFile("zeus-ibmi-config-query-file-", ".properties");
+        Files.writeString(file, ""
+                + "db.driver=org.h2.Driver\n"
+                + "db.url=jdbc:h2:mem:test_query_file\n"
+                + "db.user=sa\n"
+                + "db.allowEmptyPassword=true\n"
+                + "query.file=queries/sample.sql\n"
+                + "output.formats=json\n"
+                + "output.directory=" + outputDir + "\n", StandardCharsets.UTF_8);
+
+        AppConfig config = ConfigLoader.load(file, Map.of());
+        assertEquals("queries/sample.sql", config.queryFile());
+        assertTrue(config.query() == null);
+    }
+
+    @Test
+    void load_shouldKeepQuerySqlAndQueryFileForPriorityResolution() throws Exception {
+        Path outputDir = Files.createTempDirectory("cfg-query-priority-out-");
+        Path file = Files.createTempFile("zeus-ibmi-config-query-priority-", ".properties");
+        Files.writeString(file, ""
+                + "db.driver=org.h2.Driver\n"
+                + "db.url=jdbc:h2:mem:test_query_priority\n"
+                + "db.user=sa\n"
+                + "db.allowEmptyPassword=true\n"
+                + "query.sql=SELECT 1\n"
+                + "query.file=queries/sample.sql\n"
+                + "output.formats=json\n"
+                + "output.directory=" + outputDir + "\n", StandardCharsets.UTF_8);
+
+        AppConfig config = ConfigLoader.load(file, Map.of());
+        assertEquals("SELECT 1", config.query());
+        assertEquals("queries/sample.sql", config.queryFile());
+    }
 }
