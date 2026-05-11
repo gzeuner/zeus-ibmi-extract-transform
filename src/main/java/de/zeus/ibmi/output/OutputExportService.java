@@ -21,23 +21,28 @@ public final class OutputExportService {
         try {
             Files.createDirectories(outputDirectory);
         } catch (IOException e) {
-            throw new OutputWriteException("Cannot create output directory: " + outputDirectory, e);
+            throw new OutputWriteException("Cannot create output directory: " + outputDirectory, e, List.of());
         }
 
         List<Path> writtenFiles = new ArrayList<>();
         for (String format : formats) {
             OutputWriter writer = writersByFormat.get(format);
             if (writer == null) {
-                throw new OutputWriteException("Unsupported output format: " + format);
+                throw new OutputWriteException("Unsupported output format: " + format, writtenFiles);
             }
 
-            String content = writer.render(result);
+            String content;
+            try {
+                content = writer.render(result);
+            } catch (RuntimeException e) {
+                throw new OutputWriteException("Cannot render output format: " + format, e, writtenFiles);
+            }
             Path filePath = outputDirectory.resolve(baseName + "." + format);
             try {
                 Files.writeString(filePath, content, StandardCharsets.UTF_8);
                 writtenFiles.add(filePath);
             } catch (IOException e) {
-                throw new OutputWriteException("Cannot write output file: " + filePath, e);
+                throw new OutputWriteException("Cannot write output file: " + filePath, e, writtenFiles);
             }
         }
         return List.copyOf(writtenFiles);

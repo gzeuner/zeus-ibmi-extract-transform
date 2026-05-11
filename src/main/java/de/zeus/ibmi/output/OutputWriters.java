@@ -13,6 +13,7 @@ public final class OutputWriters {
         List<OutputWriter> writers = List.of(
                 new XmlOutputWriter(),
                 new JsonOutputWriter(),
+                new JsonLinesOutputWriter(),
                 new CsvOutputWriter(),
                 new MarkdownOutputWriter());
         Map<String, OutputWriter> byFormat = new LinkedHashMap<>();

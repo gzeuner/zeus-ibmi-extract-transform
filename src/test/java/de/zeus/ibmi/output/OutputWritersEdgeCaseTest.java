@@ -20,6 +20,7 @@ class OutputWritersEdgeCaseTest {
 
         String xml = new XmlOutputWriter().render(result);
         String json = new JsonOutputWriter().render(result);
+        String jsonl = new JsonLinesOutputWriter().render(result);
         String csv = new CsvOutputWriter().render(result);
         String md = new MarkdownOutputWriter().render(result);
 
@@ -34,6 +35,12 @@ class OutputWritersEdgeCaseTest {
         assertTrue(json.contains("Line1\\nLine2"));
         assertTrue(json.contains("\"A|B\""));
         assertTrue(json.contains("\"value\": \"\""));
+
+        assertTrue(jsonl.contains("\"A|B\":\"Müller & Söhne\""));
+        assertTrue(jsonl.contains("\"NOTES\":\"\\\"quoted\\\";x\""));
+        assertTrue(jsonl.contains("\"A|B\":\"Line1\\nLine2\""));
+        assertTrue(jsonl.contains("\"NOTES\":null"));
+        assertTrue(jsonl.contains("\"A|B\":\"A,B\""));
 
         assertTrue(csv.contains("A|B;NOTES"));
         assertTrue(csv.contains("Müller & Söhne"));
@@ -56,6 +63,7 @@ class OutputWritersEdgeCaseTest {
 
         assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<export>\n</export>\n", new XmlOutputWriter().render(empty));
         assertEquals("[\n]\n", new JsonOutputWriter().render(empty));
+        assertEquals("", new JsonLinesOutputWriter().render(empty));
         assertEquals("C1\nVARCHAR\n", new CsvOutputWriter().render(empty));
         assertEquals("| C1 |\n| --- |\n", new MarkdownOutputWriter().render(empty));
     }

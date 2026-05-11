@@ -8,6 +8,7 @@ import de.zeus.ibmi.config.AppConfig;
 import de.zeus.ibmi.config.OutputFormat;
 import de.zeus.ibmi.connection.DriverManagerJdbcConnectionFactory;
 import de.zeus.ibmi.output.OutputExportService;
+import de.zeus.ibmi.output.OutputWriter;
 import de.zeus.ibmi.output.OutputWriters;
 import de.zeus.ibmi.runmanifest.RunManifest;
 import java.nio.file.Files;
@@ -15,7 +16,9 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +55,7 @@ class RunSelectionAndExportUseCaseTest {
                 null,
                 "SELECT ID, NAME FROM TEST_DATA ORDER BY ID",
                 outputDir.toString(),
-                List.of(OutputFormat.XML, OutputFormat.JSON, OutputFormat.CSV, OutputFormat.MD),
+                List.of(OutputFormat.XML, OutputFormat.JSON, OutputFormat.JSONL, OutputFormat.CSV, OutputFormat.MD),
                 true,
                 null,
                 null,
@@ -70,11 +73,15 @@ class RunSelectionAndExportUseCaseTest {
         assertTrue(manifest.queryHash().startsWith("sha256:"));
         assertTrue(manifest.queryPreview().contains("SELECT ID, NAME"));
         assertEquals("test-config.properties", manifest.configSource());
-        assertEquals(4, manifest.outputFiles().size());
-        assertEquals(4, manifest.outputFormats().size());
+        assertEquals(5, manifest.outputFiles().size());
+        assertEquals(5, manifest.outputFormats().size());
         assertEquals(1, manifest.rowCount());
         assertEquals(2, manifest.columnCount());
         assertTrue(manifest.errorClass().isEmpty());
+        assertTrue(manifest.outputFiles().stream().allMatch(file -> file.sizeBytes() > 0));
+        assertTrue(manifest.outputFiles().stream().allMatch(file -> file.sha256().startsWith("sha256:")));
+        assertTrue(manifest.outputFiles().stream().allMatch(file -> !file.path().contains(outputDir.toAbsolutePath().toString())));
+        assertTrue(manifest.outputFiles().stream().anyMatch(file -> "jsonl".equals(file.format())));
     }
 
     @Test
@@ -113,5 +120,60 @@ class RunSelectionAndExportUseCaseTest {
         assertTrue(manifest.outputFiles().isEmpty());
         assertTrue(manifest.queryHash().startsWith("sha256:"));
         assertTrue(manifest.queryPreview().contains("MISSING_TABLE"));
+    }
+
+    @Test
+    void run_shouldCaptureAlreadyWrittenOutputFilesWhenLaterFormatFails() throws Exception {
+        Path outputDir = Files.createTempDirectory("zeus-ibmi-usecase-partial-fail-");
+        Map<String, OutputWriter> writers = new LinkedHashMap<>();
+        writers.put("xml", OutputWriters.defaultWriters().get("xml"));
+        writers.put("json", failingWriter("json"));
+        RunSelectionAndExportUseCase useCase = new RunSelectionAndExportUseCase(
+                new ReadOnlyJdbcQueryExecutor(
+                        new DriverManagerJdbcConnectionFactory(),
+                        new ReadOnlyQueryGuard()),
+                new OutputExportService(Map.copyOf(writers)),
+                "zeus-ibmi-extract-transform",
+                "0.1.0-SNAPSHOT");
+
+        AppConfig config = new AppConfig(
+                "org.h2.Driver",
+                DB_URL,
+                "sa",
+                "",
+                null,
+                "SELECT ID, NAME FROM TEST_DATA ORDER BY ID",
+                outputDir.toString(),
+                List.of(OutputFormat.XML, OutputFormat.JSON),
+                true,
+                null,
+                null,
+                true);
+
+        RunManifest manifest = useCase.run(
+                config,
+                "test-config.properties",
+                "SELECT ID, NAME FROM TEST_DATA ORDER BY ID");
+
+        assertEquals("FAILED", manifest.status());
+        assertTrue(manifest.errorClass().contains("OutputWriteException"));
+        assertEquals(1, manifest.outputFiles().size());
+        assertEquals("xml", manifest.outputFiles().get(0).format());
+        assertTrue(manifest.outputFiles().get(0).sha256().startsWith("sha256:"));
+        assertTrue(manifest.outputFiles().get(0).sizeBytes() > 0);
+    }
+
+    private static OutputWriter failingWriter(String formatName) {
+        return new OutputWriter() {
+            @Override
+            public String formatName() {
+                return formatName;
+            }
+
+            @Override
+            public String render(de.zeus.ibmi.transform.QueryResult result) {
+                throw new IllegalStateException("forced render failure");
+            }
+        };
     }
 }

@@ -7,6 +7,7 @@ import java.util.Optional;
 public enum OutputFormat {
     XML("xml"),
     JSON("json"),
+    JSONL("jsonl"),
     CSV("csv"),
     MD("md");
 

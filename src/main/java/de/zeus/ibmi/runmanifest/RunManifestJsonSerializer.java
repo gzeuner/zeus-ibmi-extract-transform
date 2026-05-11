@@ -8,31 +8,46 @@ public final class RunManifestJsonSerializer {
     }
 
     public static String toJson(RunManifest manifest) {
-        StringJoiner outputs = toJsonArray(manifest.outputFiles());
+        StringJoiner outputs = toOutputFilesJsonArray(manifest.outputFiles());
         StringJoiner outputFormats = toJsonArray(manifest.outputFormats());
         return "{"
-                + "\"toolName\":\"" + escape(manifest.toolName()) + "\","
-                + "\"toolVersion\":\"" + escape(manifest.toolVersion()) + "\","
-                + "\"runId\":\"" + escape(manifest.runId()) + "\","
-                + "\"status\":\"" + escape(manifest.status()) + "\","
+                + "\"toolName\":\"" + escape(manifest.toolName()) + "\"," 
+                + "\"toolVersion\":\"" + escape(manifest.toolVersion()) + "\"," 
+                + "\"runId\":\"" + escape(manifest.runId()) + "\"," 
+                + "\"status\":\"" + escape(manifest.status()) + "\"," 
                 + "\"dryRun\":" + manifest.dryRun() + ","
-                + "\"startedAt\":\"" + toStringOrEmpty(manifest.startedAt()) + "\","
-                + "\"finishedAt\":\"" + toStringOrEmpty(manifest.finishedAt()) + "\","
+                + "\"startedAt\":\"" + toStringOrEmpty(manifest.startedAt()) + "\"," 
+                + "\"finishedAt\":\"" + toStringOrEmpty(manifest.finishedAt()) + "\"," 
                 + "\"durationMillis\":" + manifest.durationMillis() + ","
-                + "\"configSource\":\"" + escape(manifest.configSource()) + "\","
-                + "\"queryHash\":\"" + escape(manifest.queryHash()) + "\","
-                + "\"queryPreview\":\"" + escape(manifest.queryPreview()) + "\","
-                + "\"outputDirectory\":\"" + escape(manifest.outputDirectory()) + "\","
+                + "\"configSource\":\"" + escape(manifest.configSource()) + "\"," 
+                + "\"queryHash\":\"" + escape(manifest.queryHash()) + "\"," 
+                + "\"queryPreview\":\"" + escape(manifest.queryPreview()) + "\"," 
+                + "\"outputDirectory\":\"" + escape(manifest.outputDirectory()) + "\"," 
                 + "\"outputFiles\":" + outputs + ","
                 + "\"outputFormats\":" + outputFormats + ","
                 + "\"rowCount\":" + manifest.rowCount() + ","
                 + "\"columnCount\":" + manifest.columnCount() + ","
-                + "\"errorClass\":\"" + escape(manifest.errorClass()) + "\","
-                + "\"errorMessage\":\"" + escape(manifest.errorMessage()) + "\","
-                + "\"javaVersion\":\"" + escape(manifest.javaVersion()) + "\","
-                + "\"osName\":\"" + escape(manifest.osName()) + "\","
+                + "\"errorClass\":\"" + escape(manifest.errorClass()) + "\"," 
+                + "\"errorMessage\":\"" + escape(manifest.errorMessage()) + "\"," 
+                + "\"javaVersion\":\"" + escape(manifest.javaVersion()) + "\"," 
+                + "\"osName\":\"" + escape(manifest.osName()) + "\"," 
                 + "\"osVersion\":\"" + escape(manifest.osVersion()) + "\""
                 + "}";
+    }
+
+    private static StringJoiner toOutputFilesJsonArray(Iterable<OutputFileMetadata> files) {
+        StringJoiner joiner = new StringJoiner(",", "[", "]");
+        for (OutputFileMetadata file : files) {
+            joiner.add("{"
+                    + "\"format\":\"" + escape(file.format()) + "\"," 
+                    + "\"path\":\"" + escape(file.path()) + "\"," 
+                    + "\"fileName\":\"" + escape(file.fileName()) + "\"," 
+                    + "\"sizeBytes\":" + file.sizeBytes() + ","
+                    + "\"sha256\":\"" + escape(file.sha256()) + "\"," 
+                    + "\"writtenAt\":\"" + toStringOrEmpty(file.writtenAt()) + "\""
+                    + "}");
+        }
+        return joiner;
     }
 
     private static StringJoiner toJsonArray(Iterable<String> values) {
