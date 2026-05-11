@@ -73,6 +73,7 @@ class RunSelectionAndExportUseCaseTest {
         assertTrue(manifest.queryHash().startsWith("sha256:"));
         assertTrue(manifest.queryPreview().contains("SELECT ID, NAME"));
         assertEquals("test-config.properties", manifest.configSource());
+        assertEquals("<output-directory>", manifest.outputDirectory());
         assertEquals(5, manifest.outputFiles().size());
         assertEquals(5, manifest.outputFormats().size());
         assertEquals(1, manifest.rowCount());
@@ -115,6 +116,7 @@ class RunSelectionAndExportUseCaseTest {
                 "SELECT ID, NAME FROM MISSING_TABLE");
 
         assertEquals("FAILED", manifest.status());
+        assertEquals("<output-directory>", manifest.outputDirectory());
         assertTrue(manifest.errorClass().contains("QueryExecutionException"));
         assertFalse(manifest.errorMessage().isEmpty());
         assertTrue(manifest.outputFiles().isEmpty());
@@ -156,6 +158,7 @@ class RunSelectionAndExportUseCaseTest {
                 "SELECT ID, NAME FROM TEST_DATA ORDER BY ID");
 
         assertEquals("FAILED", manifest.status());
+        assertEquals("<output-directory>", manifest.outputDirectory());
         assertTrue(manifest.errorClass().contains("OutputWriteException"));
         assertEquals(1, manifest.outputFiles().size());
         assertEquals("xml", manifest.outputFiles().get(0).format());
