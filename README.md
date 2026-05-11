@@ -89,6 +89,9 @@ Prioritaet:
 
 Fuer `--output-formats` sind aktuell erlaubt: `xml,json,jsonl,csv,md`.
 
+`--version` und `toolVersion` im RunManifest werden bevorzugt aus Build-Metadaten (Jar `Implementation-Version`, abgeleitet aus `pom.xml`) gelesen.
+Falls diese Metadaten lokal (z. B. in IDE/Test-Classpath ohne gebautes Jar) nicht verfuegbar sind, wird auf `0.1.0-SNAPSHOT` zurueckgefallen.
+
 ## 6. Dry-Run vs Execute
 Dry-Run ist Default:
 - ohne `--execute` wird keine JDBC-Query ausgefuehrt

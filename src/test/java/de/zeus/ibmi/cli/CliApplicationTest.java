@@ -3,6 +3,7 @@ package de.zeus.ibmi.cli;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.zeus.ibmi.version.VersionProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +50,23 @@ class CliApplicationTest {
         int exit = app.run(new String[] { "--version" }, printStream(outBuffer), printStream(errBuffer));
 
         assertEquals(0, exit);
-        assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains(Main.VERSION));
+        assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains(VersionProvider.DEVELOPMENT_FALLBACK_VERSION));
+    }
+
+    @Test
+    void run_shouldPrintInjectedVersion() {
+        VersionProvider provider = new VersionProvider(
+                () -> "1.2.3",
+                () -> "9.9.9",
+                VersionProvider.DEVELOPMENT_FALLBACK_VERSION);
+        CliApplication app = new CliApplication(Map.of(), provider);
+        ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+
+        int exit = app.run(new String[] { "--version" }, printStream(outBuffer), printStream(errBuffer));
+
+        assertEquals(0, exit);
+        assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("1.2.3"));
     }
 
     @Test
@@ -93,6 +110,8 @@ class CliApplicationTest {
 
         assertEquals(0, exit);
         assertTrue(outBuffer.toString(StandardCharsets.UTF_8).contains("\"status\":\"SUCCESS\""));
+        assertTrue(outBuffer.toString(StandardCharsets.UTF_8)
+                .contains("\"toolVersion\":\"" + VersionProvider.DEVELOPMENT_FALLBACK_VERSION + "\""));
     }
 
     @Test
