@@ -40,6 +40,7 @@ class RunManifestFactoryTest {
         assertEquals("SUCCESS", manifest.status());
         assertEquals("tool-a", manifest.toolName());
         assertEquals("1.0.0", manifest.toolVersion());
+        assertEquals("<output-directory>", manifest.outputDirectory());
         assertEquals(2000L, manifest.durationMillis());
         assertEquals(2, manifest.outputFiles().size());
         assertEquals("out.xml", manifest.outputFiles().get(0).path());
@@ -73,6 +74,7 @@ class RunManifestFactoryTest {
         assertEquals("FAILED", manifest.status());
         assertTrue(manifest.errorClass().contains("IllegalStateException"));
         assertEquals("password=***", manifest.errorMessage());
+        assertEquals("./output", manifest.outputDirectory());
         assertEquals(1000L, manifest.durationMillis());
     }
 
@@ -95,6 +97,26 @@ class RunManifestFactoryTest {
         assertEquals("DRY_RUN", manifest.status());
         assertTrue(manifest.dryRun());
         assertTrue(manifest.outputFiles().isEmpty());
+        assertEquals("./output", manifest.outputDirectory());
         assertEquals(2, manifest.outputFormats().size());
+    }
+
+    @Test
+    void dryRun_shouldRedactAbsoluteOutputDirectory() {
+        Instant start = Instant.parse("2026-05-11T06:00:00Z");
+        Instant finish = Instant.parse("2026-05-11T06:00:00Z");
+        RunManifest manifest = RunManifestFactory.dryRun(
+                "tool-a",
+                "1.0.0",
+                "run-4",
+                start,
+                finish,
+                "config.properties",
+                "sha256:y",
+                "SELECT 1",
+                "/home/example/output",
+                List.of("xml"));
+
+        assertEquals("<output-directory>", manifest.outputDirectory());
     }
 }

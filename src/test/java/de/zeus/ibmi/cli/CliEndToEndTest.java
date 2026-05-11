@@ -98,6 +98,8 @@ class CliEndToEndTest {
                 .max(Comparator.naturalOrder())
                 .orElseThrow();
         String manifestJson = Files.readString(manifest, StandardCharsets.UTF_8);
+        assertTrue(manifestJson.contains("\"outputDirectory\":\"<output-directory>\""));
+        assertFalse(manifestJson.contains(outputDir.toString().replace('\\', '/')));
         assertTrue(manifestJson.contains("\"status\":\"SUCCESS\""));
         assertTrue(manifestJson.contains("\"toolVersion\":\"" + VersionProvider.DEVELOPMENT_FALLBACK_VERSION + "\""));
         assertTrue(manifestJson.contains("\"rowCount\":2"));

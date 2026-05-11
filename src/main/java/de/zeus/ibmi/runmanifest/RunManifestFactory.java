@@ -40,7 +40,7 @@ public final class RunManifestFactory {
                 configSource,
                 queryHash,
                 queryPreview,
-                toDisplayPath(outputDirectory),
+                ManifestPathFormatter.outputDirectoryDisplay(outputDirectory),
                 toOutputFileMetadata(outputDirectory, outputFiles),
                 outputFormats,
                 rowCount,
@@ -78,7 +78,7 @@ public final class RunManifestFactory {
                 configSource,
                 queryHash,
                 queryPreview,
-                toDisplayPath(outputDirectory),
+                ManifestPathFormatter.outputDirectoryDisplay(outputDirectory),
                 toOutputFileMetadata(outputDirectory, outputFiles),
                 outputFormats,
                 0,
@@ -113,7 +113,7 @@ public final class RunManifestFactory {
                 configSource,
                 queryHash,
                 queryPreview,
-                outputDirectory,
+                ManifestPathFormatter.outputDirectoryDisplay(outputDirectory),
                 List.of(),
                 outputFormats,
                 0,
@@ -136,7 +136,7 @@ public final class RunManifestFactory {
             if (absoluteFile == null) {
                 continue;
             }
-            String relativePath = relativizeOrFileName(base, absoluteFile);
+            String relativePath = ManifestPathFormatter.outputFilePathDisplay(base, absoluteFile);
             String fileName = absoluteFile.getFileName() == null ? "" : absoluteFile.getFileName().toString();
             String format = formatFromFileName(fileName);
             long sizeBytes = fileSize(absoluteFile);
@@ -163,18 +163,6 @@ public final class RunManifestFactory {
         }
     }
 
-    private static String relativizeOrFileName(Path outputDirectory, Path file) {
-        if (outputDirectory != null) {
-            try {
-                Path relative = outputDirectory.relativize(file);
-                return normalizeForManifest(relative.toString());
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-        Path fileName = file.getFileName();
-        return fileName == null ? normalizeForManifest(file.toString()) : normalizeForManifest(fileName.toString());
-    }
-
     private static String formatFromFileName(String fileName) {
         if (fileName == null || fileName.isBlank()) {
             return "";
@@ -184,17 +172,6 @@ public final class RunManifestFactory {
             return "";
         }
         return fileName.substring(dotIndex + 1);
-    }
-
-    private static String normalizeForManifest(String value) {
-        return value.replace('\\', '/');
-    }
-
-    private static String toDisplayPath(Path outputDirectory) {
-        if (outputDirectory == null) {
-            return "";
-        }
-        return normalizeForManifest(outputDirectory.toString());
     }
 
     private static long durationMillis(Instant startedAt, Instant finishedAt) {

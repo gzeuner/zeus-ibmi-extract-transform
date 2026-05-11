@@ -130,6 +130,11 @@ Manifest-Felder (Auszug):
 - errorClass / errorMessage (maskiert)
 - javaVersion / osName / osVersion
 
+Hinweis zu Pfaden im Manifest:
+- `outputDirectory` und `outputFiles.path` werden als manifest-sichere Anzeige-/Referenzpfade geschrieben.
+- Dateien werden weiterhin im konfigurierten Output-Verzeichnis erzeugt; `sizeBytes` und `sha256` basieren auf den real geschriebenen Dateien.
+- Absolute lokale Pfade werden nach Moeglichkeit nicht serialisiert.
+
 ## 9. IBM i / JT400 Konfiguration
 Driver Class fuer IBM i:
 - `com.ibm.as400.access.AS400JDBCDriver`
