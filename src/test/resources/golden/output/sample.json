@@ -1,0 +1,10 @@
+[
+  {
+    "ID": {"value": "1", "type": "INTEGER"},
+    "NAME": {"value": "Alice", "type": "VARCHAR"}
+  },
+  {
+    "ID": {"value": "2", "type": "INTEGER"},
+    "NAME": {"value": "Bob|Builder;\"X\"", "type": "VARCHAR"}
+  }
+]

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export>
+  <data>
+    <property path="ID" type="INTEGER"><value>1</value></property>
+    <property path="NAME" type="VARCHAR"><value>Alice</value></property>
+  </data>
+  <data>
+    <property path="ID" type="INTEGER"><value>2</value></property>
+    <property path="NAME" type="VARCHAR"><value>Bob|Builder;&quot;X&quot;</value></property>
+  </data>
+</export>
