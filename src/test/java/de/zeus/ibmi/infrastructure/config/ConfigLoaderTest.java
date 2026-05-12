@@ -162,6 +162,89 @@ class ConfigLoaderTest {
   }
 
   @Test
+  void load_shouldApplyHtmlOutputOptionsFromProperties() throws Exception {
+    Path outputDir = Files.createTempDirectory("cfg-html-options-out-");
+    Path file = Files.createTempFile("zeus-ibmi-config-html-options-", ".properties");
+    Files.writeString(
+        file,
+        ""
+            + "db.driver=org.h2.Driver\n"
+            + "db.url=jdbc:h2:mem:test_html_options\n"
+            + "db.user=sa\n"
+            + "db.allowEmptyPassword=true\n"
+            + "query.sql=SELECT 1\n"
+            + "output.formats=html\n"
+            + "output.directory="
+            + asPortablePath(outputDir)
+            + "\n"
+            + "output.html.theme=dark\n"
+            + "output.html.customCssFile=./docs/test.css\n"
+            + "output.html.includeManifest=false\n",
+        StandardCharsets.UTF_8);
+
+    AppConfig config = ConfigLoader.load(file, Map.of());
+    assertEquals("dark", config.htmlTheme());
+    assertEquals("./docs/test.css", config.htmlCustomCssFile());
+    assertEquals(false, config.htmlIncludeManifest());
+  }
+
+  @Test
+  void load_shouldApplyHtmlOutputOptionsFromYaml() throws Exception {
+    Path outputDir = Files.createTempDirectory("cfg-html-yaml-options-out-");
+    Path file = Files.createTempFile("zeus-ibmi-config-html-options-", ".yml");
+    Files.writeString(
+        file,
+        ""
+            + "zeus:\n"
+            + "  ibmi:\n"
+            + "    db:\n"
+            + "      driver: org.h2.Driver\n"
+            + "      url: jdbc:h2:mem:test_html_options_yaml\n"
+            + "      user: sa\n"
+            + "      allow-empty-password: true\n"
+            + "    query:\n"
+            + "      sql: SELECT 1\n"
+            + "    output:\n"
+            + "      directory: "
+            + asPortablePath(outputDir)
+            + "\n"
+            + "      formats:\n"
+            + "        - html\n"
+            + "      html:\n"
+            + "        theme: light\n"
+            + "        custom-css-file: ./docs/test.css\n"
+            + "        include-manifest: false\n",
+        StandardCharsets.UTF_8);
+
+    AppConfig config = ConfigLoader.load(file, Map.of());
+    assertEquals("light", config.htmlTheme());
+    assertEquals("./docs/test.css", config.htmlCustomCssFile());
+    assertEquals(false, config.htmlIncludeManifest());
+  }
+
+  @Test
+  void load_shouldRejectInvalidHtmlTheme() throws Exception {
+    Path outputDir = Files.createTempDirectory("cfg-html-theme-invalid-out-");
+    Path file = Files.createTempFile("zeus-ibmi-config-html-theme-invalid-", ".properties");
+    Files.writeString(
+        file,
+        ""
+            + "db.driver=org.h2.Driver\n"
+            + "db.url=jdbc:h2:mem:test_html_invalid_theme\n"
+            + "db.user=sa\n"
+            + "db.allowEmptyPassword=true\n"
+            + "query.sql=SELECT 1\n"
+            + "output.formats=html\n"
+            + "output.directory="
+            + asPortablePath(outputDir)
+            + "\n"
+            + "output.html.theme=neon\n",
+        StandardCharsets.UTF_8);
+
+    assertThrows(ConfigValidationException.class, () -> ConfigLoader.load(file, Map.of()));
+  }
+
+  @Test
   void load_shouldFailWhenOutputDirectoryCannotBeCreated() throws Exception {
     Path existingFile = Files.createTempFile("cfg-not-a-directory-", ".tmp");
     Path file = Files.createTempFile("zeus-ibmi-config-dir-", ".properties");

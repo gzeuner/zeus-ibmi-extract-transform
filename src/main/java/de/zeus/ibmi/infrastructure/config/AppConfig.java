@@ -13,6 +13,9 @@ public record AppConfig(
     String queryFile,
     String outputDirectory,
     List<OutputFormat> outputFormats,
+    String htmlTheme,
+    String htmlCustomCssFile,
+    boolean htmlIncludeManifest,
     boolean runManifestEnabled,
     Integer fetchSize,
     Integer queryTimeoutSeconds,
@@ -27,6 +30,8 @@ public record AppConfig(
     query = trimToNull(query);
     queryFile = trimToNull(queryFile);
     outputDirectory = trimToNull(outputDirectory);
+    htmlTheme = normalizeHtmlTheme(htmlTheme);
+    htmlCustomCssFile = trimToNull(htmlCustomCssFile);
     if (outputFormats == null || outputFormats.isEmpty()) {
       outputFormats =
           List.of(
@@ -44,6 +49,39 @@ public record AppConfig(
     if (queryTimeoutSeconds != null && queryTimeoutSeconds <= 0) {
       throw new ConfigValidationException("queryTimeoutSeconds must be greater than 0.");
     }
+  }
+
+  public AppConfig(
+      String databaseDriver,
+      String databaseUrl,
+      String username,
+      String password,
+      String passwordEnvName,
+      String query,
+      String queryFile,
+      String outputDirectory,
+      List<OutputFormat> outputFormats,
+      boolean runManifestEnabled,
+      Integer fetchSize,
+      Integer queryTimeoutSeconds,
+      boolean allowEmptyPassword) {
+    this(
+        databaseDriver,
+        databaseUrl,
+        username,
+        password,
+        passwordEnvName,
+        query,
+        queryFile,
+        outputDirectory,
+        outputFormats,
+        "auto",
+        null,
+        true,
+        runManifestEnabled,
+        fetchSize,
+        queryTimeoutSeconds,
+        allowEmptyPassword);
   }
 
   private static String trimToNull(String value) {
@@ -85,10 +123,25 @@ public record AppConfig(
         queryFile,
         outputDirectory,
         outputFormats,
+        htmlTheme,
+        htmlCustomCssFile,
+        htmlIncludeManifest,
         runManifestEnabled,
         fetchSize,
         queryTimeoutSeconds,
         allowEmptyPassword);
+  }
+
+  private static String normalizeHtmlTheme(String value) {
+    String normalized = trimToNull(value);
+    if (normalized == null) {
+      return "auto";
+    }
+    String lower = normalized.toLowerCase();
+    if ("auto".equals(lower) || "light".equals(lower) || "dark".equals(lower)) {
+      return lower;
+    }
+    throw new ConfigValidationException("output.html.theme must be one of: auto, light, dark");
   }
 
   private static boolean isH2Url(String url) {

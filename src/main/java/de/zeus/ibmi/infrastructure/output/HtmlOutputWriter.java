@@ -3,8 +3,26 @@ package de.zeus.ibmi.infrastructure.output;
 import de.zeus.ibmi.transform.ColumnDefinition;
 import de.zeus.ibmi.transform.QueryResult;
 import de.zeus.ibmi.transform.RecordRow;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public final class HtmlOutputWriter extends AbstractStringOutputWriter {
+
+  private static final String THEME_AUTO = "auto";
+  private static final String THEME_LIGHT = "light";
+  private static final String THEME_DARK = "dark";
+
+  private final HtmlRenderOptions options;
+
+  public HtmlOutputWriter() {
+    this(HtmlRenderOptions.defaults());
+  }
+
+  public HtmlOutputWriter(HtmlRenderOptions options) {
+    this.options = options == null ? HtmlRenderOptions.defaults() : options;
+  }
 
   @Override
   public String formatName() {
@@ -13,7 +31,7 @@ public final class HtmlOutputWriter extends AbstractStringOutputWriter {
 
   @Override
   public String render(QueryResult result) {
-    StringBuilder out = new StringBuilder();
+    StringBuilder out = new StringBuilder(12_000);
     out.append(
         """
             <!DOCTYPE html>
@@ -22,84 +40,17 @@ public final class HtmlOutputWriter extends AbstractStringOutputWriter {
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>zeus-ibmi-extract-transform Export</title>
-              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
               <style>
-                :root {
-                  color-scheme: light dark;
-                  --surface-bg: #f6f8fb;
-                  --surface-card: #ffffff;
-                  --surface-border: #d4dceb;
-                  --text-main: #1f2937;
-                  --text-muted: #5b6577;
-                  --header-bg: #0d6efd;
-                  --header-text: #ffffff;
-                }
-                @media (prefers-color-scheme: dark) {
-                  :root {
-                    --surface-bg: #0f141d;
-                    --surface-card: #161f2c;
-                    --surface-border: #2f3b50;
-                    --text-main: #e6ecf8;
-                    --text-muted: #a7b0c2;
-                    --header-bg: #365fbe;
-                    --header-text: #f7f9fd;
-                  }
-                }
-                body {
-                  margin: 0;
-                  background: radial-gradient(circle at top right, #1d4ed811, transparent 48%), var(--surface-bg);
-                  color: var(--text-main);
-                  font-family: "Segoe UI", "Noto Sans", "Liberation Sans", sans-serif;
-                }
-                .export-wrap {
-                  max-width: 1200px;
-                  margin: 2rem auto;
-                  padding: 0 1rem;
-                }
-                .export-card {
-                  background: var(--surface-card);
-                  border: 1px solid var(--surface-border);
-                  border-radius: 0.9rem;
-                  box-shadow: 0 12px 28px #00000014;
-                  overflow: hidden;
-                }
-                .export-header {
-                  padding: 1rem 1.25rem;
-                  border-bottom: 1px solid var(--surface-border);
-                }
-                .export-title {
-                  margin: 0;
-                  font-size: 1.3rem;
-                  font-weight: 600;
-                }
-                .export-subtitle {
-                  margin: 0.35rem 0 0;
-                  color: var(--text-muted);
-                  font-size: 0.92rem;
-                }
-                .table-wrap {
-                  padding: 0.9rem;
-                }
-                .table {
-                  margin: 0;
-                  border-color: var(--surface-border);
-                }
-                .table > :not(caption) > * > * {
-                  color: var(--text-main);
-                  background-color: transparent;
-                  border-color: var(--surface-border);
-                  vertical-align: top;
-                  white-space: pre-wrap;
-                  word-break: break-word;
-                }
-                .table thead th {
-                  background: var(--header-bg);
-                  color: var(--header-text);
-                  font-weight: 600;
-                  position: sticky;
-                  top: 0;
-                }
+            """);
+    out.append(buildThemeVariablesCss(options.theme()));
+    out.append(baseCss());
+    out.append(
+        """
               </style>
+            """);
+    appendCustomCss(out, options.customCssFile());
+    out.append(
+        """
             </head>
             <body>
             <main class="export-wrap">
@@ -112,8 +63,8 @@ public final class HtmlOutputWriter extends AbstractStringOutputWriter {
     out.append(
         """
                 </header>
-                <div class="table-wrap table-responsive">
-                  <table class="table table-striped table-hover table-bordered align-middle">
+                <div class="table-wrap">
+                  <table class="export-table">
                     <thead>
                       <tr>
             """);
@@ -149,12 +100,193 @@ public final class HtmlOutputWriter extends AbstractStringOutputWriter {
                     </tbody>
                   </table>
                 </div>
+            """);
+    if (options.includeManifest()) {
+      appendEmbeddedManifest(out, result);
+    }
+    out.append(
+        """
               </section>
             </main>
             </body>
             </html>
             """);
     return out.toString();
+  }
+
+  private static String buildThemeVariablesCss(String theme) {
+    String lightVariables =
+        """
+            --surface-bg: #f6f8fb;
+            --surface-card: #ffffff;
+            --surface-border: #d4dceb;
+            --text-main: #1f2937;
+            --text-muted: #5b6577;
+            --header-bg: #0d6efd;
+            --header-text: #ffffff;
+            --row-hover: #0d6efd12;
+            --table-zebra: #f3f7ff;
+            --manifest-bg: #eef4ff;
+            """;
+    String darkVariables =
+        """
+            --surface-bg: #0f141d;
+            --surface-card: #161f2c;
+            --surface-border: #2f3b50;
+            --text-main: #e6ecf8;
+            --text-muted: #a7b0c2;
+            --header-bg: #365fbe;
+            --header-text: #f7f9fd;
+            --row-hover: #8ab4f822;
+            --table-zebra: #111826;
+            --manifest-bg: #1a2538;
+            """;
+
+    if (THEME_LIGHT.equals(theme)) {
+      return ":root {\n  color-scheme: light;\n" + lightVariables + "}\n";
+    }
+    if (THEME_DARK.equals(theme)) {
+      return ":root {\n  color-scheme: dark;\n" + darkVariables + "}\n";
+    }
+    return ":root {\n  color-scheme: light dark;\n"
+        + lightVariables
+        + "}\n@media (prefers-color-scheme: dark) {\n  :root {\n"
+        + darkVariables
+        + "  }\n}\n";
+  }
+
+  private static String baseCss() {
+    return """
+        body {
+          margin: 0;
+          background: radial-gradient(circle at top right, #1d4ed811, transparent 48%), var(--surface-bg);
+          color: var(--text-main);
+          font-family: "Segoe UI", "Noto Sans", "Liberation Sans", sans-serif;
+        }
+        .export-wrap {
+          max-width: 1200px;
+          margin: 2rem auto;
+          padding: 0 1rem;
+        }
+        .export-card {
+          background: var(--surface-card);
+          border: 1px solid var(--surface-border);
+          border-radius: 0.9rem;
+          box-shadow: 0 12px 28px #00000014;
+          overflow: hidden;
+        }
+        .export-header {
+          padding: 1rem 1.25rem;
+          border-bottom: 1px solid var(--surface-border);
+        }
+        .export-title {
+          margin: 0;
+          font-size: 1.3rem;
+          font-weight: 600;
+        }
+        .export-subtitle {
+          margin: 0.35rem 0 0;
+          color: var(--text-muted);
+          font-size: 0.92rem;
+        }
+        .table-wrap {
+          overflow-x: auto;
+          padding: 0.9rem;
+        }
+        .export-table {
+          width: 100%;
+          border-collapse: collapse;
+          border: 1px solid var(--surface-border);
+          margin: 0;
+        }
+        .export-table th,
+        .export-table td {
+          border: 1px solid var(--surface-border);
+          color: var(--text-main);
+          vertical-align: top;
+          white-space: pre-wrap;
+          word-break: break-word;
+          padding: 0.55rem 0.65rem;
+          text-align: left;
+        }
+        .export-table thead th {
+          background: var(--header-bg);
+          color: var(--header-text);
+          font-weight: 600;
+          position: sticky;
+          top: 0;
+        }
+        .export-table tbody tr:nth-child(even) td {
+          background: var(--table-zebra);
+        }
+        .export-table tbody tr:hover td {
+          background: var(--row-hover);
+        }
+        .manifest-meta {
+          border-top: 1px solid var(--surface-border);
+          margin: 0;
+          padding: 0.9rem 1.25rem 1.2rem;
+          background: var(--manifest-bg);
+        }
+        .manifest-meta summary {
+          cursor: pointer;
+          font-weight: 600;
+        }
+        .manifest-meta pre {
+          margin: 0.8rem 0 0;
+          white-space: pre-wrap;
+          word-break: break-word;
+          color: var(--text-main);
+          font-size: 0.86rem;
+        }
+        """;
+  }
+
+  private static void appendCustomCss(StringBuilder out, String customCssFile) {
+    if (customCssFile == null || customCssFile.isBlank()) {
+      return;
+    }
+    try {
+      String customCss = Files.readString(Path.of(customCssFile), StandardCharsets.UTF_8);
+      out.append("<style>\n").append(customCss).append("\n</style>\n");
+    } catch (IOException ex) {
+      throw new IllegalStateException("Unable to read custom CSS file: " + customCssFile, ex);
+    }
+  }
+
+  private static void appendEmbeddedManifest(StringBuilder out, QueryResult result) {
+    out.append(
+        """
+                <details class="manifest-meta">
+                  <summary>Embedded HTML manifest</summary>
+                  <pre id="zeus-html-manifest">{
+          "tool": "zeus-ibmi-extract-transform",
+          "format": "html",
+          "rowCount": """);
+    out.append(result.rowCount());
+    out.append(",\n");
+    out.append("      \"columnCount\": ");
+    out.append(result.columns().size());
+    out.append(",\n");
+    out.append("      \"columns\": [");
+    for (int i = 0; i < result.columns().size(); i++) {
+      ColumnDefinition column = result.columns().get(i);
+      if (i > 0) {
+        out.append(",");
+      }
+      out.append("\n        {\"name\":\"")
+          .append(escapeJson(column.name()))
+          .append("\",\"jdbcType\":\"")
+          .append(escapeJson(column.jdbcTypeName()))
+          .append("\"}");
+    }
+    out.append(
+        """
+
+          ]
+        }</pre>
+                </details>
+        """);
   }
 
   private static String escapeHtml(String value) {
@@ -174,5 +306,65 @@ public final class HtmlOutputWriter extends AbstractStringOutputWriter {
       }
     }
     return escaped.toString();
+  }
+
+  private static String escapeJson(String value) {
+    if (value == null) {
+      return "";
+    }
+    StringBuilder escaped = new StringBuilder(value.length() + 16);
+    for (int i = 0; i < value.length(); i++) {
+      char c = value.charAt(i);
+      switch (c) {
+        case '\\' -> escaped.append("\\\\");
+        case '"' -> escaped.append("\\\"");
+        case '\b' -> escaped.append("\\b");
+        case '\f' -> escaped.append("\\f");
+        case '\n' -> escaped.append("\\n");
+        case '\r' -> escaped.append("\\r");
+        case '\t' -> escaped.append("\\t");
+        default -> {
+          if (c < 0x20) {
+            escaped.append(String.format("\\u%04x", (int) c));
+          } else {
+            escaped.append(c);
+          }
+        }
+      }
+    }
+    return escaped.toString();
+  }
+
+  public record HtmlRenderOptions(String theme, String customCssFile, boolean includeManifest) {
+
+    public HtmlRenderOptions {
+      theme = normalizeTheme(theme);
+      customCssFile = trimToNull(customCssFile);
+    }
+
+    public static HtmlRenderOptions defaults() {
+      return new HtmlRenderOptions(THEME_AUTO, null, true);
+    }
+  }
+
+  private static String normalizeTheme(String value) {
+    String normalized = trimToNull(value);
+    if (normalized == null) {
+      return THEME_AUTO;
+    }
+    String lower = normalized.toLowerCase();
+    if (THEME_AUTO.equals(lower) || THEME_LIGHT.equals(lower) || THEME_DARK.equals(lower)) {
+      return lower;
+    }
+    throw new IllegalArgumentException(
+        "Unsupported HTML theme: " + value + " (allowed: auto, light, dark)");
+  }
+
+  private static String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 }

@@ -23,6 +23,9 @@ public final class ConfigCompatibilityMapper {
     ZeusIbmiProperties.Output output = new ZeusIbmiProperties.Output();
     output.setDirectory(config.outputDirectory());
     output.setFormats(config.outputFormatIds());
+    output.setHtml(
+        new ZeusIbmiProperties.Output.HtmlProperties(
+            config.htmlTheme(), config.htmlCustomCssFile(), config.htmlIncludeManifest()));
 
     ZeusIbmiProperties.Manifest manifest = new ZeusIbmiProperties.Manifest();
     manifest.setEnabled(config.runManifestEnabled());

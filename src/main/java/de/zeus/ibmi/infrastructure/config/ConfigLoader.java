@@ -85,6 +85,42 @@ public final class ConfigLoader {
             "ZEUS_IBMI_OUTPUT_DIRECTORY",
             props.getProperty("output.directory"),
             null);
+    String htmlTheme =
+        pick(
+            cliOverrides,
+            "output.html.theme",
+            env,
+            "ZEUS_IBMI_OUTPUT_HTML_THEME",
+            firstNonBlank(
+                props.getProperty("output.html.theme"),
+                props.getProperty("zeus.ibmi.output.html.theme")),
+            "auto");
+    String htmlCustomCssFile =
+        pick(
+            cliOverrides,
+            "output.html.customCssFile",
+            env,
+            "ZEUS_IBMI_OUTPUT_HTML_CUSTOM_CSS_FILE",
+            firstNonBlank(
+                props.getProperty("output.html.customCssFile"),
+                props.getProperty("output.html.custom-css-file"),
+                props.getProperty("zeus.ibmi.output.html.customCssFile"),
+                props.getProperty("zeus.ibmi.output.html.custom-css-file")),
+            null);
+    boolean htmlIncludeManifest =
+        parseBoolean(
+            pick(
+                cliOverrides,
+                "output.html.includeManifest",
+                env,
+                "ZEUS_IBMI_OUTPUT_HTML_INCLUDE_MANIFEST",
+                firstNonBlank(
+                    props.getProperty("output.html.includeManifest"),
+                    props.getProperty("output.html.include-manifest"),
+                    props.getProperty("zeus.ibmi.output.html.includeManifest"),
+                    props.getProperty("zeus.ibmi.output.html.include-manifest")),
+                "true"),
+            "output.html.includeManifest");
 
     String passwordEnvName =
         pick(
@@ -159,6 +195,9 @@ public final class ConfigLoader {
             queryFile,
             outputDirectory,
             formats,
+            htmlTheme,
+            htmlCustomCssFile,
+            htmlIncludeManifest,
             runManifestEnabled,
             fetchSize,
             queryTimeoutSeconds,
@@ -211,6 +250,12 @@ public final class ConfigLoader {
               case "zeus.ibmi.query.timeout-seconds", "zeus.ibmi.query.timeoutSeconds" ->
                   "query.timeoutSeconds";
               case "zeus.ibmi.output.directory" -> "output.directory";
+              case "zeus.ibmi.output.html.theme" -> "output.html.theme";
+              case "zeus.ibmi.output.html.custom-css-file", "zeus.ibmi.output.html.customCssFile" ->
+                  "output.html.customCssFile";
+              case "zeus.ibmi.output.html.include-manifest",
+                      "zeus.ibmi.output.html.includeManifest" ->
+                  "output.html.includeManifest";
               case "zeus.ibmi.manifest.enabled" -> "run.manifest.enabled";
               default -> null;
             };

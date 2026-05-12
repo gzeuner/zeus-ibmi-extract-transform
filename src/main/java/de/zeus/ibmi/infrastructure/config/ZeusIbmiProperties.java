@@ -153,6 +153,8 @@ public class ZeusIbmiProperties {
 
     private List<String> formats = new ArrayList<>(List.of("xml", "json", "csv", "md", "html"));
 
+    @Valid private HtmlProperties html = new HtmlProperties();
+
     public String getDirectory() {
       return directory;
     }
@@ -167,6 +169,20 @@ public class ZeusIbmiProperties {
 
     public void setFormats(List<String> formats) {
       this.formats = formats;
+    }
+
+    public HtmlProperties getHtml() {
+      return html;
+    }
+
+    public void setHtml(HtmlProperties html) {
+      this.html = html;
+    }
+
+    public record HtmlProperties(String theme, String customCssFile, boolean includeManifest) {
+      public HtmlProperties() {
+        this("auto", null, true);
+      }
     }
   }
 

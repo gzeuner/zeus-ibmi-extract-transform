@@ -15,5 +15,9 @@ zeus:
     output:
       directory: ${ZEUS_IBMI_OUTPUT_DIRECTORY:}
       formats: ${ZEUS_IBMI_OUTPUT_FORMATS:xml,json,csv,md,html}
+      html:
+        theme: ${ZEUS_IBMI_OUTPUT_HTML_THEME:auto}
+        custom-css-file: ${ZEUS_IBMI_OUTPUT_HTML_CUSTOM_CSS_FILE:}
+        include-manifest: ${ZEUS_IBMI_OUTPUT_HTML_INCLUDE_MANIFEST:true}
     manifest:
       enabled: ${ZEUS_IBMI_RUN_MANIFEST_ENABLED:true}
