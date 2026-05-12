@@ -138,7 +138,7 @@ public record CliArguments(
 
     @Option(
         names = "--output-formats",
-        description = "Override output formats (xml,json,jsonl,csv,md)")
+        description = "Override output formats (xml,json,jsonl,csv,md,html)")
     String outputFormats;
 
     @Option(names = "--manifest-enabled", description = "Force run manifest enabled")

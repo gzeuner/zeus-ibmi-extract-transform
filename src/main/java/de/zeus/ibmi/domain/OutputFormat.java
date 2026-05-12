@@ -9,13 +9,15 @@ public sealed interface OutputFormat
         OutputFormat.Json,
         OutputFormat.Jsonl,
         OutputFormat.Csv,
-        OutputFormat.Markdown {
+        OutputFormat.Markdown,
+        OutputFormat.Html {
 
   OutputFormat XML = new Xml();
   OutputFormat JSON = new Json();
   OutputFormat JSONL = new Jsonl();
   OutputFormat CSV = new Csv();
   OutputFormat MD = new Markdown();
+  OutputFormat HTML = new Html();
 
   String id();
 
@@ -38,6 +40,7 @@ public sealed interface OutputFormat
     formats.put(JSONL.id(), JSONL);
     formats.put(CSV.id(), CSV);
     formats.put(MD.id(), MD);
+    formats.put(HTML.id(), HTML);
     return Map.copyOf(formats);
   }
 
@@ -73,6 +76,13 @@ public sealed interface OutputFormat
     @Override
     public String id() {
       return "md";
+    }
+  }
+
+  record Html() implements OutputFormat {
+    @Override
+    public String id() {
+      return "html";
     }
   }
 }

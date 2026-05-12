@@ -63,7 +63,8 @@ class RunSelectionAndExportUseCaseTest {
                 OutputFormat.JSON,
                 OutputFormat.JSONL,
                 OutputFormat.CSV,
-                OutputFormat.MD),
+                OutputFormat.MD,
+                OutputFormat.HTML),
             true,
             null,
             null,
@@ -87,8 +88,8 @@ class RunSelectionAndExportUseCaseTest {
     assertEquals("query.sql", manifest.querySource());
     assertEquals("test-config.properties", manifest.configSource());
     assertEquals("<output-directory>", manifest.outputDirectory());
-    assertEquals(5, manifest.outputFiles().size());
-    assertEquals(5, manifest.outputFormats().size());
+    assertEquals(6, manifest.outputFiles().size());
+    assertEquals(6, manifest.outputFormats().size());
     assertEquals(1, manifest.rowCount());
     assertEquals(2, manifest.columnCount());
     assertTrue(manifest.errorClass().isEmpty());
@@ -99,6 +100,7 @@ class RunSelectionAndExportUseCaseTest {
         manifest.outputFiles().stream()
             .allMatch(file -> !file.path().contains(outputDir.toAbsolutePath().toString())));
     assertTrue(manifest.outputFiles().stream().anyMatch(file -> "jsonl".equals(file.format())));
+    assertTrue(manifest.outputFiles().stream().anyMatch(file -> "html".equals(file.format())));
   }
 
   @Test

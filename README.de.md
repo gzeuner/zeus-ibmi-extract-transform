@@ -31,7 +31,7 @@ Execute mit `jsonl` zusaetzlich:
 ```bash
 java -jar target/zeus-ibmi-extract-transform-0.2.0.jar \
   --config config/example.application.properties \
-  --output-formats xml,json,jsonl,csv,md \
+  --output-formats xml,json,jsonl,csv,md,html \
   --execute
 ```
 
@@ -112,7 +112,7 @@ Execution:
   -x, --execute
 ```
 
-Fuer `--output-formats` sind aktuell erlaubt: `xml,json,jsonl,csv,md`.
+Fuer `--output-formats` sind aktuell erlaubt: `xml,json,jsonl,csv,md,html`.
 `--help` und `--version` funktionieren ohne `--config`.
 Bei doppelten CLI-Optionen gewinnt der zuletzt gesetzte Wert.
 
@@ -139,6 +139,7 @@ V1 unterstuetzt:
 - `jsonl`
 - `csv`
 - `md`
+- `html`
 
 `jsonl` schreibt ein JSON-Objekt pro Zeile (kein umschliessendes Array) und eignet sich fuer Streaming-/Pipeline-Verarbeitung.
 

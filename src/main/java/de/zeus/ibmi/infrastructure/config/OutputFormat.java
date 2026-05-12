@@ -9,7 +9,8 @@ public enum OutputFormat {
   JSON("json"),
   JSONL("jsonl"),
   CSV("csv"),
-  MD("md");
+  MD("md"),
+  HTML("html");
 
   private final String id;
 

@@ -14,6 +14,6 @@ zeus:
       timeout-seconds: ${ZEUS_IBMI_QUERY_TIMEOUT_SECONDS:}
     output:
       directory: ${ZEUS_IBMI_OUTPUT_DIRECTORY:}
-      formats: ${ZEUS_IBMI_OUTPUT_FORMATS:xml,json,csv,md}
+      formats: ${ZEUS_IBMI_OUTPUT_FORMATS:xml,json,csv,md,html}
     manifest:
       enabled: ${ZEUS_IBMI_RUN_MANIFEST_ENABLED:true}

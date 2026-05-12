@@ -76,7 +76,7 @@ public final class ConfigLoader {
             env,
             "ZEUS_IBMI_OUTPUT_FORMATS",
             props.getProperty("output.formats"),
-            "xml,json,csv,md");
+            "xml,json,csv,md,html");
     String outputDirectory =
         pick(
             cliOverrides,

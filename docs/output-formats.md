@@ -42,8 +42,14 @@ Example:
 - Markdown table.
 - Escapes pipe characters in values.
 
+## `html`
+- Self-contained HTML5 document with responsive Bootstrap table.
+- Column headers include JDBC type tooltip.
+- Light/dark mode friendly defaults.
+- File extension: `.html`
+
 ## Selection
 Use `--output-formats` as comma-separated values, e.g.:
 ```bash
---output-formats xml,json,jsonl,csv,md
+--output-formats xml,json,jsonl,csv,md,html
 ```

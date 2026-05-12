@@ -11,7 +11,12 @@ public final class OutputFormatParser {
 
   public static List<OutputFormat> parseCsv(String csv) {
     if (csv == null || csv.trim().isEmpty()) {
-      return List.of(OutputFormat.XML, OutputFormat.JSON, OutputFormat.CSV, OutputFormat.MD);
+      return List.of(
+          OutputFormat.XML,
+          OutputFormat.JSON,
+          OutputFormat.CSV,
+          OutputFormat.MD,
+          OutputFormat.HTML);
     }
     String[] parts = csv.split(",");
     Set<OutputFormat> unique = new LinkedHashSet<>();
