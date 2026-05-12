@@ -18,6 +18,9 @@ public final class InputHashCalculator {
     joiner.add(nullSafe(normalizedQuery));
     joiner.add(String.join(",", config.outputFormatIds()));
     joiner.add(nullSafe(config.outputDirectory()));
+    joiner.add(nullSafe(config.htmlTheme()));
+    joiner.add(nullSafe(config.htmlCustomCssFile()));
+    joiner.add(String.valueOf(config.htmlIncludeManifest()));
     return "sha256:" + hex(sha256(joiner.toString()));
   }
 

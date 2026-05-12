@@ -59,6 +59,7 @@ class OutputWritersEdgeCaseTest {
     assertTrue(html.contains("&quot;quoted&quot;;x"));
     assertTrue(html.contains("Line1\nLine2"));
     assertTrue(html.contains("<th scope=\"col\""));
+    assertTrue(html.contains("id=\"zeus-html-manifest\""));
   }
 
   @Test
@@ -74,11 +75,7 @@ class OutputWritersEdgeCaseTest {
     assertEquals("", new JsonlOutputWriter().render(empty));
     assertEquals("C1\nVARCHAR\n", new CsvOutputWriter().render(empty));
     assertEquals("| C1 |\n| --- |\n", new MarkdownOutputWriter().render(empty));
-    assertTrue(
-        new HtmlOutputWriter()
-            .render(empty)
-            .contains(
-                "<table class=\"table table-striped table-hover table-bordered align-middle\">"));
+    assertTrue(new HtmlOutputWriter().render(empty).contains("<table class=\"export-table\">"));
   }
 
   private static QueryResult edgeCaseResult() {

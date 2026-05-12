@@ -7,6 +7,8 @@ import de.zeus.ibmi.transform.QueryResultFixture;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class OutputWritersGoldenFileTest {
@@ -41,6 +43,19 @@ class OutputWritersGoldenFileTest {
   @Test
   void htmlWriter_shouldMatchGoldenFile() throws Exception {
     assertGolden(new HtmlOutputWriter(), "/golden/output/sample.html");
+  }
+
+  @Test
+  void htmlWriter_darkThemeWithCustomCssAndWithoutManifest_shouldMatchGoldenFile()
+      throws Exception {
+    Path customCssPath =
+        Path.of(
+            Objects.requireNonNull(getClass().getResource("/golden/output/sample-html-custom.css"))
+                .toURI());
+    HtmlOutputWriter writer =
+        new HtmlOutputWriter(
+            new HtmlOutputWriter.HtmlRenderOptions("dark", customCssPath.toString(), false));
+    assertGolden(writer, "/golden/output/sample-html-dark-no-manifest.html");
   }
 
   private void assertGolden(AbstractStringOutputWriter writer, String resourcePath)

@@ -11,6 +11,7 @@ import de.zeus.ibmi.infrastructure.config.ConfigCompatibilityMapper;
 import de.zeus.ibmi.infrastructure.config.ConfigLoader;
 import de.zeus.ibmi.infrastructure.config.ConfigValidationException;
 import de.zeus.ibmi.infrastructure.config.ConfigValidator;
+import de.zeus.ibmi.infrastructure.output.HtmlOutputWriter;
 import de.zeus.ibmi.infrastructure.output.OutputExportService;
 import de.zeus.ibmi.infrastructure.output.OutputWriterRegistry;
 import de.zeus.ibmi.infrastructure.security.SecurityUtils;
@@ -111,7 +112,8 @@ public final class CliApplication {
         querySourceResolver.resolve(config, args.configOverrides(), args.configPath());
     AppConfig resolvedConfig = config.withQuery(querySource.queryText());
     RunManifestService runManifestService = new RunManifestService();
-    ExtractOrchestrator orchestrator = buildOrchestrator(toolVersion, runManifestService);
+    ExtractOrchestrator orchestrator =
+        buildOrchestrator(resolvedConfig, toolVersion, runManifestService);
     String normalizedQuery = orchestrator.validateQuery(resolvedConfig.query());
     Query query =
         new Query(
@@ -162,13 +164,16 @@ public final class CliApplication {
   }
 
   private ExtractOrchestrator buildOrchestrator(
-      String toolVersion, RunManifestService runManifestService) {
+      AppConfig config, String toolVersion, RunManifestService runManifestService) {
     ReadOnlyQueryGuard guard = new ReadOnlyQueryGuard();
+    HtmlOutputWriter.HtmlRenderOptions htmlOptions =
+        new HtmlOutputWriter.HtmlRenderOptions(
+            config.htmlTheme(), config.htmlCustomCssFile(), config.htmlIncludeManifest());
     return new ExtractOrchestrator(
         guard,
         new de.zeus.ibmi.selection.ReadOnlyJdbcQueryExecutor(
             new DriverManagerJdbcConnectionFactory(), guard),
-        new OutputExportService(OutputWriterRegistry.defaultRegistry()),
+        new OutputExportService(OutputWriterRegistry.defaultRegistry(htmlOptions)),
         runManifestService,
         TOOL_NAME,
         toolVersion);

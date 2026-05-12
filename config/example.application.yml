@@ -19,5 +19,9 @@ zeus:
         - csv
         - md
         - html
+      html:
+        theme: auto
+        custom-css-file:
+        include-manifest: true
     manifest:
       enabled: true

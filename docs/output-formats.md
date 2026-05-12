@@ -43,10 +43,14 @@ Example:
 - Escapes pipe characters in values.
 
 ## `html`
-- Self-contained HTML5 document with responsive Bootstrap table.
+- Fully self-contained HTML5 document with embedded CSS and responsive table.
 - Column headers include JDBC type tooltip.
 - Light/dark mode friendly defaults.
 - File extension: `.html`
+- Config:
+  - `zeus.ibmi.output.html.theme`: `light` | `dark` | `auto` (default: `auto`)
+  - `zeus.ibmi.output.html.custom-css-file`: optional path to custom CSS to append
+  - `zeus.ibmi.output.html.include-manifest`: include embedded manifest block in HTML (default: `true`)
 
 ## Selection
 Use `--output-formats` as comma-separated values, e.g.:

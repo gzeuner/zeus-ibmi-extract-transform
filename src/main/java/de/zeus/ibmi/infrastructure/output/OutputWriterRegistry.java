@@ -29,6 +29,11 @@ public final class OutputWriterRegistry {
   }
 
   public static OutputWriterRegistry defaultRegistry() {
+    return defaultRegistry(HtmlOutputWriter.HtmlRenderOptions.defaults());
+  }
+
+  public static OutputWriterRegistry defaultRegistry(
+      HtmlOutputWriter.HtmlRenderOptions htmlOptions) {
     return new OutputWriterRegistry(
         List.of(
             new XmlOutputWriter(),
@@ -36,6 +41,6 @@ public final class OutputWriterRegistry {
             new JsonlOutputWriter(),
             new CsvOutputWriter(),
             new MarkdownOutputWriter(),
-            new HtmlOutputWriter()));
+            new HtmlOutputWriter(htmlOptions)));
   }
 }
