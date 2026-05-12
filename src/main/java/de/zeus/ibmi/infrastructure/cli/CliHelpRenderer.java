@@ -16,7 +16,7 @@ public final class CliHelpRenderer {
     help.append("  java -jar ")
         .append(toolName)
         .append(
-            ".jar --config config/example.application.properties --output-formats xml,json,jsonl,csv,md --execute\n");
+            ".jar --config config/example.application.properties --output-formats xml,json,jsonl,csv,md,html --execute\n");
     help.append("  java -jar ")
         .append(toolName)
         .append(
@@ -47,7 +47,7 @@ public final class CliHelpRenderer {
     help.append("Output:\n");
     help.append("  --output-dir <path>             Override output directory\n");
     help.append(
-        "  --output-formats <csv>          Override output formats (xml,json,jsonl,csv,md)\n");
+        "  --output-formats <csv>          Override output formats (xml,json,jsonl,csv,md,html)\n");
     help.append("  --manifest-enabled              Force run manifest enabled\n");
     help.append("  --manifest-disabled             Force run manifest disabled\n\n");
     help.append("Execution:\n");

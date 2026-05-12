@@ -18,5 +18,6 @@ zeus:
         - jsonl
         - csv
         - md
+        - html
     manifest:
       enabled: true

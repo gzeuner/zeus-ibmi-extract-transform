@@ -38,6 +38,11 @@ class OutputWritersGoldenFileTest {
     assertGolden(new MarkdownOutputWriter(), "/golden/output/sample.md");
   }
 
+  @Test
+  void htmlWriter_shouldMatchGoldenFile() throws Exception {
+    assertGolden(new HtmlOutputWriter(), "/golden/output/sample.html");
+  }
+
   private void assertGolden(AbstractStringOutputWriter writer, String resourcePath)
       throws Exception {
     String actual = normalize(writer.render(sampleResult));

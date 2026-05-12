@@ -151,7 +151,7 @@ public class ZeusIbmiProperties {
   public static class Output {
     private String directory;
 
-    private List<String> formats = new ArrayList<>(List.of("xml", "json", "csv", "md"));
+    private List<String> formats = new ArrayList<>(List.of("xml", "json", "csv", "md", "html"));
 
     public String getDirectory() {
       return directory;

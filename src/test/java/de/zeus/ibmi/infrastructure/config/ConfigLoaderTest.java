@@ -138,6 +138,30 @@ class ConfigLoaderTest {
   }
 
   @Test
+  void load_shouldAcceptHtmlOutputFormat() throws Exception {
+    Path outputDir = Files.createTempDirectory("cfg-html-format-out-");
+    Path file = Files.createTempFile("zeus-ibmi-config-html-format-", ".properties");
+    Files.writeString(
+        file,
+        ""
+            + "db.driver=org.h2.Driver\n"
+            + "db.url=jdbc:h2:mem:test_html\n"
+            + "db.user=sa\n"
+            + "db.allowEmptyPassword=true\n"
+            + "query.sql=SELECT 1\n"
+            + "output.formats=html,json\n"
+            + "output.directory="
+            + asPortablePath(outputDir)
+            + "\n",
+        StandardCharsets.UTF_8);
+
+    AppConfig config = ConfigLoader.load(file, Map.of());
+    assertEquals(2, config.outputFormats().size());
+    assertEquals(OutputFormat.HTML, config.outputFormats().get(0));
+    assertEquals(OutputFormat.JSON, config.outputFormats().get(1));
+  }
+
+  @Test
   void load_shouldFailWhenOutputDirectoryCannotBeCreated() throws Exception {
     Path existingFile = Files.createTempFile("cfg-not-a-directory-", ".tmp");
     Path file = Files.createTempFile("zeus-ibmi-config-dir-", ".properties");

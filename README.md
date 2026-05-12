@@ -38,7 +38,7 @@ Execute with all output formats:
 ```bash
 java -jar target/zeus-ibmi-extract-transform-0.2.0.jar \
   --config config/example.application.properties \
-  --output-formats xml,json,jsonl,csv,md \
+  --output-formats xml,json,jsonl,csv,md,html \
   --execute
 ```
 

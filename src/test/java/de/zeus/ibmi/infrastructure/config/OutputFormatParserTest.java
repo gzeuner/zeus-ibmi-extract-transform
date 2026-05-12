@@ -15,6 +15,12 @@ class OutputFormatParserTest {
   }
 
   @Test
+  void parseCsv_shouldAcceptHtml() {
+    List<OutputFormat> formats = OutputFormatParser.parseCsv("html,json");
+    assertEquals(List.of(OutputFormat.HTML, OutputFormat.JSON), formats);
+  }
+
+  @Test
   void parseCsv_shouldKeepInvalidFormatsRejected() {
     assertThrows(ConfigValidationException.class, () -> OutputFormatParser.parseCsv("xml,banana"));
   }

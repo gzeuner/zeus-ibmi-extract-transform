@@ -29,7 +29,12 @@ public record AppConfig(
     outputDirectory = trimToNull(outputDirectory);
     if (outputFormats == null || outputFormats.isEmpty()) {
       outputFormats =
-          List.of(OutputFormat.XML, OutputFormat.JSON, OutputFormat.CSV, OutputFormat.MD);
+          List.of(
+              OutputFormat.XML,
+              OutputFormat.JSON,
+              OutputFormat.CSV,
+              OutputFormat.MD,
+              OutputFormat.HTML);
     } else {
       outputFormats = List.copyOf(outputFormats);
     }

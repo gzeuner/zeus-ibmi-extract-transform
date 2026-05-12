@@ -20,6 +20,7 @@ class CliHelpRendererTest {
     assertTrue(help.contains("Execution:"));
     assertTrue(help.contains("--db-password"));
     assertTrue(help.contains("--query-file <file>"));
+    assertTrue(help.contains("xml,json,jsonl,csv,md,html"));
     assertTrue(help.contains("Prefer ENV-based secrets"));
     assertTrue(help.contains("Exit codes:"));
   }

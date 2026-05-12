@@ -23,6 +23,7 @@ class OutputWritersEdgeCaseTest {
     String jsonl = new JsonlOutputWriter().render(result);
     String csv = new CsvOutputWriter().render(result);
     String md = new MarkdownOutputWriter().render(result);
+    String html = new HtmlOutputWriter().render(result);
 
     assertTrue(xml.contains("Müller &amp; Söhne"));
     assertTrue(xml.contains("&quot;quoted&quot;"));
@@ -52,6 +53,12 @@ class OutputWritersEdgeCaseTest {
     assertTrue(md.contains("A\\|B"));
     assertTrue(md.contains("\"quoted\";x"));
     assertTrue(md.contains("Line1<br/>Line2"));
+
+    assertTrue(html.contains("title=\"JDBC Type: VARCHAR\""));
+    assertTrue(html.contains("Müller &amp; Söhne"));
+    assertTrue(html.contains("&quot;quoted&quot;;x"));
+    assertTrue(html.contains("Line1\nLine2"));
+    assertTrue(html.contains("<th scope=\"col\""));
   }
 
   @Test
@@ -67,6 +74,11 @@ class OutputWritersEdgeCaseTest {
     assertEquals("", new JsonlOutputWriter().render(empty));
     assertEquals("C1\nVARCHAR\n", new CsvOutputWriter().render(empty));
     assertEquals("| C1 |\n| --- |\n", new MarkdownOutputWriter().render(empty));
+    assertTrue(
+        new HtmlOutputWriter()
+            .render(empty)
+            .contains(
+                "<table class=\"table table-striped table-hover table-bordered align-middle\">"));
   }
 
   private static QueryResult edgeCaseResult() {

@@ -35,6 +35,7 @@ public final class OutputWriterRegistry {
             new JsonOutputWriter(),
             new JsonlOutputWriter(),
             new CsvOutputWriter(),
-            new MarkdownOutputWriter()));
+            new MarkdownOutputWriter(),
+            new HtmlOutputWriter()));
   }
 }

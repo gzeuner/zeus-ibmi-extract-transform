@@ -70,7 +70,7 @@ class CliEndToEndTest {
         files.stream().anyMatch(path -> path.getFileName().toString().endsWith(".manifest.json")));
     assertFalse(
         files.stream()
-            .anyMatch(path -> isDataOutputFile(path, "xml", "json", "jsonl", "csv", "md")));
+            .anyMatch(path -> isDataOutputFile(path, "xml", "json", "jsonl", "csv", "md", "html")));
   }
 
   @Test
@@ -120,7 +120,7 @@ class CliEndToEndTest {
             "org.h2.Driver",
             "jdbc:h2:mem:cli_e2e_execute;MODE=DB2;DB_CLOSE_DELAY=-1",
             "SELECT 1 AS ID, 'Müller' AS NAME, CAST(NULL AS VARCHAR) AS NOTES UNION ALL SELECT 2 AS ID, 'Bob|Builder;\"X\"' AS NAME, 'Line1' || CHAR(10) || 'Line2' AS NOTES ORDER BY ID",
-            "xml,json,csv,md,jsonl",
+            "xml,json,csv,md,jsonl,html",
             true,
             true,
             true);
@@ -144,6 +144,7 @@ class CliEndToEndTest {
     assertTrue(files.stream().anyMatch(path -> hasDataExtension(path, "csv")));
     assertTrue(files.stream().anyMatch(path -> hasDataExtension(path, "md")));
     assertTrue(files.stream().anyMatch(path -> hasDataExtension(path, "jsonl")));
+    assertTrue(files.stream().anyMatch(path -> hasDataExtension(path, "html")));
 
     Path manifest =
         files.stream()
@@ -159,6 +160,7 @@ class CliEndToEndTest {
             "\"toolVersion\":\"" + VersionProvider.DEVELOPMENT_FALLBACK_VERSION + "\""));
     assertTrue(manifestJson.contains("\"rowCount\":2"));
     assertTrue(manifestJson.contains("\"format\":\"jsonl\""));
+    assertTrue(manifestJson.contains("\"format\":\"html\""));
     assertTrue(manifestJson.contains("\"sizeBytes\":"));
     assertTrue(manifestJson.contains("\"sha256\":\"sha256:"));
   }
