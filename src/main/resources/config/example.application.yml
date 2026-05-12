@@ -1,0 +1,22 @@
+zeus:
+  ibmi:
+    db:
+      driver: com.ibm.as400.access.AS400JDBCDriver
+      url: jdbc:as400://YOUR_HOSTNAME;naming=sql;errors=full
+      user: ${ZEUS_IBMI_DB_USER:}
+      password-env: ZEUS_IBMI_DB_PASSWORD
+      allow-empty-password: false
+    query:
+      sql: SELECT * FROM YOUR_SCHEMA.YOUR_TABLE FETCH FIRST 100 ROWS ONLY
+      fetch-size: 200
+      timeout-seconds: 120
+    output:
+      directory: ./target/output
+      formats:
+        - xml
+        - json
+        - jsonl
+        - csv
+        - md
+    manifest:
+      enabled: true
