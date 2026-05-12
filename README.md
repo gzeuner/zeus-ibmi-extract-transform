@@ -1,43 +1,50 @@
 # zeus-ibmi-extract-transform
 
-## 1. Projektbeschreibung
-`zeus-ibmi-extract-transform` ist ein CLI-first Werkzeug, um read-only SQL-Selektionen gegen DB2 for i (IBM i) kontrolliert auszufuehren und in neutrale Ausgabedateien zu exportieren.
+English | [Deutsch](README.de.md)
 
-## 2. Status
-Early extraction / work in progress.
+`zeus-ibmi-extract-transform` is a safety-first Java CLI for read-only SQL extraction from IBM i (DB2 for i) with deterministic multi-format exports and a full `RunManifest` audit trail.
 
-## 3. Quickstart (Dry-Run und lokal)
-Voraussetzungen:
-- Java 17+
+## Status
+Version `0.2.0` (production-hardening baseline).
+
+## Core Safety Model
+- Dry-run is default; `--execute` is required for real query execution.
+- Read-only guard allows `SELECT` / `WITH` only and blocks multi-statement and dangerous keywords.
+- Secrets are masked in CLI errors and manifest error fields.
+- Query source precedence is deterministic: `--query` > `--query-file` > `query.sql` > `query.file`.
+- Configuration precedence is deterministic: `CLI` > `ENV` > config file > defaults.
+
+## Requirements
+- Java 21+
 - Maven 3.9+
 
-Build und Tests:
+## Build
 ```bash
-mvn test
-mvn verify
+./mvnw verify
 ```
 
-Dry-Run mit Beispielkonfiguration (Default, keine Query-Ausfuehrung):
+## Quickstart
+Dry-run:
 ```bash
-java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar --config config/example.application.properties
+java -jar target/zeus-ibmi-extract-transform-0.2.0.jar --config config/example.application.properties
 ```
 
-Explizite Execute-Ausfuehrung:
+Execute:
 ```bash
-java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar --config config/example.application.properties --execute
+java -jar target/zeus-ibmi-extract-transform-0.2.0.jar --config config/example.application.properties --execute
 ```
 
-Execute mit `jsonl` zusaetzlich:
+Execute with all output formats:
 ```bash
-java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar \
+java -jar target/zeus-ibmi-extract-transform-0.2.0.jar \
   --config config/example.application.properties \
   --output-formats xml,json,jsonl,csv,md \
   --execute
 ```
 
-Offline/H2-Demo ohne IBM-i-Verbindung:
+H2 local demo:
 ```bash
-java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar \
+java -jar target/zeus-ibmi-extract-transform-0.2.0.jar \
   --config config/example.application.properties \
   --db-driver org.h2.Driver \
   --db-url "jdbc:h2:mem:demo_readonly;MODE=DB2;DB_CLOSE_DELAY=-1" \
@@ -45,41 +52,7 @@ java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar \
   --execute
 ```
 
-Dry-Run mit SQL-Datei (UTF-8):
-```bash
-java -jar target/zeus-ibmi-extract-transform-0.1.0-SNAPSHOT.jar \
-  --config config/example.application.properties \
-  --query-file examples/queries/sample-customers.sql
-```
-
-## 4. Beispielkonfiguration
-Beispieldatei:
-- `config/example.application.properties`
-
-Wichtige Properties:
-- `db.driver`
-- `db.url`
-- `db.user`
-- `db.password` (nur wenn bewusst gewuenscht)
-- `db.passwordEnv` (empfohlen)
-- `db.allowEmptyPassword`
-- `query.sql`
-- `query.file`
-- `output.directory`
-- `output.formats`
-- `run.manifest.enabled`
-- `query.fetchSize` (optional)
-- `query.timeoutSeconds` (optional)
-
-Prioritaet:
-- CLI-Argumente > ENV > Config-Datei > Defaults
-
-Query-Quelle (effektive SQL):
-- `--query` gewinnt vor `--query-file`
-- `--query-file` gewinnt vor `query.sql`
-- `query.sql` gewinnt vor `query.file`
-
-## 5. CLI Usage
+## CLI
 ```text
 General:
   -h, --help
@@ -110,112 +83,40 @@ Output:
 
 Execution:
   -x, --execute
+  --dry-run
 ```
 
-Fuer `--output-formats` sind aktuell erlaubt: `xml,json,jsonl,csv,md`.
-`--help` und `--version` funktionieren ohne `--config`.
-Bei doppelten CLI-Optionen gewinnt der zuletzt gesetzte Wert.
+## Configuration
+Supported config file types:
+- `.properties` (legacy-compatible)
+- `.yml` / `.yaml` (Spring-style `zeus.ibmi.*` keys)
 
-`--version` und `toolVersion` im RunManifest werden bevorzugt aus Build-Metadaten (Jar `Implementation-Version`, abgeleitet aus `pom.xml`) gelesen.
-Falls diese Metadaten lokal (z. B. in IDE/Test-Classpath ohne gebautes Jar) nicht verfuegbar sind, wird auf `0.1.0-SNAPSHOT` zurueckgefallen.
-
-## 6. Dry-Run vs Execute
-Dry-Run ist Default:
-- ohne `--execute` wird keine JDBC-Query ausgefuehrt
-- Query-Quelle wird aufgeloest (`--query`, `--query-file`, `query.sql`, `query.file`)
-- Query-Guard und Konfiguration werden validiert
-- geplante Outputs werden angezeigt
-- Secrets werden maskiert
-
-Execute nur mit `--execute`:
-- read-only Query wird ausgefuehrt
-- Outputs werden geschrieben
-- RunManifest wird bei aktivierter Manifest-Option geschrieben
-
-## 7. Output-Formate
-V1 unterstuetzt:
-- `xml`
-- `json`
-- `jsonl`
-- `csv`
-- `md`
-
-`jsonl` schreibt ein JSON-Objekt pro Zeile (kein umschliessendes Array) und eignet sich fuer Streaming-/Pipeline-Verarbeitung.
-
-## 8. RunManifest
-Manifest-Felder (Auszug):
-- tool name + version
-- startedAt / finishedAt / durationMillis
-- status (`SUCCESS`, `FAILED`, `DRY_RUN`)
-- dryRun
-- configSource (ohne Secret-Werte)
-- querySourceType (`CLI_INLINE`, `CLI_FILE`, `CONFIG_INLINE`, `CONFIG_FILE`)
-- querySource (sichere Anzeige, ohne absolute lokale Pfade)
-- queryHash
-- queryPreview (gekuerzt)
-- outputDirectory
-- outputFiles (pro Datei inkl. `format`, `path`, `fileName`, `sizeBytes`, `sha256`, `writtenAt`)
-- outputFormats
-- rowCount / columnCount
-- errorClass / errorMessage (maskiert)
-- javaVersion / osName / osVersion
-
-Hinweis zu Pfaden im Manifest:
-- `outputDirectory` und `outputFiles.path` werden als manifest-sichere Anzeige-/Referenzpfade geschrieben.
-- Dateien werden weiterhin im konfigurierten Output-Verzeichnis erzeugt; `sizeBytes` und `sha256` basieren auf den real geschriebenen Dateien.
-- Absolute lokale Pfade werden nach Moeglichkeit nicht serialisiert.
-
-## 9. IBM i / JT400 Konfiguration
-Driver Class fuer IBM i:
-- `com.ibm.as400.access.AS400JDBCDriver`
-
-JDBC-URL-Beispiel mit Platzhaltern:
-- `jdbc:as400://YOUR_HOSTNAME;naming=sql;errors=full`
-
-Empfohlene Credential-ENVs:
+Environment mappings:
+- `ZEUS_IBMI_DB_URL`
 - `ZEUS_IBMI_DB_USER`
 - `ZEUS_IBMI_DB_PASSWORD`
-- optional: `ZEUS_IBMI_DB_PASSWORD_ENV`
+- `ZEUS_IBMI_DB_PASSWORD_ENV`
+- `ZEUS_IBMI_OUTPUT_DIRECTORY`
+- `ZEUS_IBMI_OUTPUT_FORMATS`
+- `ZEUS_IBMI_RUN_MANIFEST_ENABLED`
+- `ZEUS_IBMI_QUERY_FETCH_SIZE`
+- `ZEUS_IBMI_QUERY_TIMEOUT_SECONDS`
 
-Hinweise:
-- DB2 for i nutzt oft Library-/Schema-Konzepte, die vom Naming-Mode abhaengen (`sql` vs `system`).
-- CCSID/Encoding sollte fuer produktive Umgebungen explizit getestet werden.
-- V1 ist read-only-first (SELECT/WITH Guardrail), aber kein vollstaendiger Schutz gegen jede Fehlkonfiguration.
+See [`docs/output-formats.md`](docs/output-formats.md), [`docs/ibmi-jt400-notes.md`](docs/ibmi-jt400-notes.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-Hinweis zu SQL-Dateien:
-- SQL-Dateien werden als UTF-8 gelesen.
-- Query-Dateien koennen fachliche Tabellen-/Spaltennamen enthalten; keine Secrets in SQL-Dateien ablegen.
-- Read-only Guardrails bleiben auch bei `query.file` aktiv.
+## Exit Codes
+- `0` success
+- `1` general
+- `2` config/arguments
+- `3` query guard
+- `4` JDBC/SQL
+- `5` output/filesystem
+- `6` manifest
 
-Weitere Details:
-- `docs/ibmi-jt400-notes.md`
-
-## 10. Security / Secrets
-- Keine echten Credentials im Repository.
-- Secrets bevorzugt aus ENV beziehen (`db.passwordEnv`).
-- `--db-password` nur bewusst/lokal nutzen (nicht in Shell-History oder Skripte mit Commit-Risiko).
-- CLI/Manifest-Fehlermeldungen werden maskiert.
-- Produktive Nutzung nur mit separatem Security Review und Betriebsfreigabe.
-
-## 11. Exit-Codes
-- `0` Erfolg
-- `1` Allgemeiner Fehler
-- `2` Konfigurationsfehler
-- `3` Query-Guard-Fehler
-- `4` JDBC-/SQL-Fehler
-- `5` Output-/Dateisystemfehler
-- `6` Manifest-Fehler
-
-## 12. Roadmap
-- CLI-UX weiter stabilisieren (inkl. erweiterte Report-Ausgaben)
-- Vergleichslauf gegen Legacy-Verhalten (`zeus-access-400`)
-- haertere Integrations- und Kompatibilitaetstests fuer IBM-i-spezifische SQL-Faelle
-
-## 13. Bezug zu `zeus-access-400`
-Das Projekt ist der kontrollierte Nachfolgepfad fuer den Legacy-Selektionskern. Die Migration erfolgt schrittweise, testgestuetzt und ohne Big-Bang-Umbau.
+## Security Notes
+- Prefer environment variables for credentials.
+- Avoid passing passwords on the command line in shared or logged shells.
+- RunManifest intentionally avoids absolute sensitive local paths where possible.
 
 ## Disclaimer
-Dieses Projekt ist kein offizielles IBM-Produkt und steht in keiner Verbindung zu IBM.
-Es gibt keine Gewaehr fuer produktive Eignung.
-Entwicklerinnen und Entwickler bleiben fuer Konfiguration, Ausfuehrung und Bewertung der Ergebnisse verantwortlich.
-Read-only Guardrails reduzieren Risiko, ersetzen aber kein fachliches und betriebliches Review vor produktivem Einsatz.
+Not an IBM product. Validate configuration, security controls, and output correctness before production use.

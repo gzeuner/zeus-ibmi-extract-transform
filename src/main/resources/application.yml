@@ -1,0 +1,19 @@
+zeus:
+  ibmi:
+    db:
+      driver: com.ibm.as400.access.AS400JDBCDriver
+      url: ${ZEUS_IBMI_DB_URL:}
+      user: ${ZEUS_IBMI_DB_USER:}
+      password: ${ZEUS_IBMI_DB_PASSWORD:}
+      password-env: ${ZEUS_IBMI_DB_PASSWORD_ENV:}
+      allow-empty-password: ${ZEUS_IBMI_DB_ALLOW_EMPTY_PASSWORD:false}
+    query:
+      sql: ${ZEUS_IBMI_QUERY:}
+      file: ${ZEUS_IBMI_QUERY_FILE:}
+      fetch-size: ${ZEUS_IBMI_QUERY_FETCH_SIZE:}
+      timeout-seconds: ${ZEUS_IBMI_QUERY_TIMEOUT_SECONDS:}
+    output:
+      directory: ${ZEUS_IBMI_OUTPUT_DIRECTORY:}
+      formats: ${ZEUS_IBMI_OUTPUT_FORMATS:xml,json,csv,md}
+    manifest:
+      enabled: ${ZEUS_IBMI_RUN_MANIFEST_ENABLED:true}

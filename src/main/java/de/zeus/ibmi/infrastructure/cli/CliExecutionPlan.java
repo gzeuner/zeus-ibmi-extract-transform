@@ -1,0 +1,23 @@
+package de.zeus.ibmi.infrastructure.cli;
+
+import java.nio.file.Path;
+import java.util.List;
+
+public record CliExecutionPlan(
+    Path configPath,
+    boolean execute,
+    String databaseUrl,
+    String databaseUser,
+    String outputDirectory,
+    List<String> outputFormats,
+    boolean runManifestEnabled,
+    String querySource,
+    boolean querySourceOverridden,
+    String queryPreview) {
+
+  public CliExecutionPlan {
+    outputFormats = outputFormats == null ? List.of() : List.copyOf(outputFormats);
+    querySource = querySource == null ? "" : querySource;
+    queryPreview = queryPreview == null ? "" : queryPreview;
+  }
+}
